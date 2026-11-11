@@ -3,6 +3,7 @@
  * Copyright (C) 2016-2018 Linaro Ltd.
  * Copyright (C) 2014 Sony Mobile Communications AB
  * Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -85,7 +86,7 @@
 #define TCSR_WCSS_CLK_MASK	0x1F
 #define TCSR_WCSS_CLK_ENABLE	0x14
 
-#define MAX_HALT_REG		4
+#define MAX_HALT_REG		3
 enum {
 	WCSS_IPQ8074,
 	WCSS_QCS404,
@@ -864,9 +865,9 @@ static int q6v5_wcss_init_mmio(struct q6v5_wcss *wcss,
 		return -EINVAL;
 	}
 
-	wcss->halt_q6 = halt_reg[1];
-	wcss->halt_wcss = halt_reg[2];
-	wcss->halt_nc = halt_reg[3];
+	wcss->halt_q6 = halt_reg[0];
+	wcss->halt_wcss = halt_reg[1];
+	wcss->halt_nc = halt_reg[2];
 
 	return 0;
 }
@@ -1015,7 +1016,7 @@ static int q6v5_wcss_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
-	ret = qcom_q6v5_init(&wcss->q6v5, pdev, rproc, desc->crash_reason_smem, NULL, NULL);
+	ret = qcom_q6v5_init(&wcss->q6v5, pdev, rproc, desc->crash_reason_smem, 0, 0, NULL, NULL);
 	if (ret)
 		return ret;
 

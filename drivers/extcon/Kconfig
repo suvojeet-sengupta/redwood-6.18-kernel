@@ -162,36 +162,24 @@ config EXTCON_PTN5150
 	help
 	  Say Y here to enable support for USB peripheral and USB host
 	  detection by NXP PTN5150 CC (Configuration Channel) logic chip.
+#
+# EXTCON drivers
+#
+# When adding new entries keep the list in alphabetical order
 
-config EXTCON_QCOM_SPMI_MISC
+config EXTCON_QTI_SPMI_MISC
 	tristate "Qualcomm USB extcon support"
 	depends on ARCH_QCOM || COMPILE_TEST
 	help
 	  Say Y here to enable SPMI PMIC based USB cable detection
 	  support on Qualcomm PMICs such as PM8941.
 
-config EXTCON_RT8973A
-	tristate "Richtek RT8973A EXTCON support"
-	depends on I2C
-	select IRQ_DOMAIN
-	select REGMAP_I2C
-	select REGMAP_IRQ
-	help
-	  If you say yes here you get support for the MUIC device of
-	  Richtek RT8973A. The RT8973A is a USB port accessory detector
-	  and switch that is optimized to protect low voltage system
-	  from abnormal high input voltage (up to 28V).
+	  This driver provides USB ID and VBUS detection support through
+	  the extcon framework. It handles USB host/device role switching
+	  by monitoring the USB ID pin and VBUS line states.
 
-config EXTCON_SM5502
-	tristate "Silicon Mitus SM5502/SM5504/SM5703 EXTCON support"
-	depends on I2C
-	select IRQ_DOMAIN
-	select REGMAP_I2C
-	select REGMAP_IRQ
-	help
-	  If you say yes here you get support for the MUIC device of
-	  Silicon Mitus SM5502. The SM5502 is a USB port accessory
-	  detector and switch.
+	  To compile this driver as a module, choose M here: the
+	  module will be called extcon-qti-spmi-misc.
 
 config EXTCON_USB_GPIO
 	tristate "USB GPIO extcon support"
@@ -200,31 +188,5 @@ config EXTCON_USB_GPIO
 	  Say Y here to enable GPIO based USB cable detection extcon support.
 	  Used typically if GPIO is used for USB ID pin detection.
 
-config EXTCON_USBC_CROS_EC
-	tristate "ChromeOS Embedded Controller EXTCON support"
-	depends on CROS_EC
-	help
-	  Say Y here to enable USB Type C cable detection extcon support when
-	  using Chrome OS EC based USB Type-C ports.
-
-config EXTCON_USBC_TUSB320
-	tristate "TI TUSB320 USB-C extcon support"
-	depends on I2C && TYPEC
-	select REGMAP_I2C
-	depends on USB_ROLE_SWITCH || !USB_ROLE_SWITCH
-	help
-	  Say Y here to enable support for USB Type C cable detection extcon
-	  support using a TUSB320.
-
-config EXTCON_RTK_TYPE_C
-	tristate "Realtek RTD SoC extcon Type-C Driver"
-	depends on ARCH_REALTEK || COMPILE_TEST
-	depends on TYPEC
-	select USB_COMMON
-	help
-	  Say Y here to enable extcon support for USB Type C cable detection
-	  when using the Realtek RTD SoC USB Type-C port.
-	  The DHC (Digital Home Hub) RTD series SoC contains a type c module.
-	  This driver will detect the status of the type-c port.
-
-endif
+	  To compile this driver as a module, choose M here: the
+	  module will be called extcon-qti-spmi-misc.

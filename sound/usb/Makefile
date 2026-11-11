@@ -1,7 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for ALSA
-#
 
 snd-usb-audio-y := 	card.o \
 			clock.o \
@@ -22,9 +19,10 @@ snd-usb-audio-y := 	card.o \
 			quirks.o \
 			stream.o \
 			validate.o
+ccflags-y += -I$(src)
 
-snd-usb-audio-$(CONFIG_SND_USB_AUDIO_MIDI_V2) += midi2.o
-snd-usb-audio-$(CONFIG_SND_USB_AUDIO_USE_MEDIA_CONTROLLER) += media.o
+obj-$(CONFIG_SND_USB_AUDIO_QMI) += snd-usb-audio-qmi.o
+snd-usb-audio-qmi-objs += usb_audio_qmi_svc.o usb_audio_qmi_v01.o
 
 snd-usbmidi-lib-y := midi.o
 

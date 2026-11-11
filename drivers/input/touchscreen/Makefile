@@ -1,12 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for the touchscreen drivers.
-#
 
-# Each configuration option enables a list of files.
+ccflags-y += -I$(src)
 
-wm97xx-ts-y := wm97xx-core.o
-goodix_ts-y := goodix.o goodix_fwupload.o
+obj-$(CONFIG_TOUCHSCREEN_CAP1296) += cap1296.o
 
 obj-$(CONFIG_TOUCHSCREEN_88PM860X)	+= 88pm860x-ts.o
 obj-$(CONFIG_TOUCHSCREEN_AD7877)	+= ad7877.o

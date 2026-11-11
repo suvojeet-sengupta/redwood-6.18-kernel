@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: GPL-2.0-only
+# SPDX-License-Identifier: GPL-2.0
 #
 # Video configuration
 #
@@ -90,3 +90,4 @@ endif
 source "drivers/gpu/trace/Kconfig"
 
 endmenu
+source "$(KCONFIG_EXT_PREFIX)drivers/video/backlight/Kconfig"

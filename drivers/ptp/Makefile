@@ -1,7 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for PTP 1588 clock support.
-#
 
 ptp-y					:= ptp_clock.o ptp_chardev.o ptp_sysfs.o ptp_vclock.o
 ptp_kvm-$(CONFIG_X86)			:= ptp_kvm_x86.o ptp_kvm_common.o
@@ -22,3 +19,7 @@ obj-$(CONFIG_PTP_1588_CLOCK_OCP)	+= ptp_ocp.o
 obj-$(CONFIG_PTP_DFL_TOD)		+= ptp_dfl_tod.o
 obj-$(CONFIG_PTP_S390)			+= ptp_s390.o
 obj-$(CONFIG_PTP_NETC_V4_TIMER)		+= ptp_netc.o
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_PTP_QCOM_CLOCK_TSC_VM) += ptp_qcom_tsc_vm.o
+

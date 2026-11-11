@@ -1,10 +1,11 @@
-/* SPDX-License-Identifier: GPL-2.0+ */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * u_ether.h -- interface to USB gadget "ethernet link" utilities
  *
  * Copyright (C) 2003-2005,2008 David Brownell
  * Copyright (C) 2003-2004 Robert Schwebel, Benedikt Spranger
  * Copyright (C) 2008 Nokia Corporation
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef __U_ETHER_H
@@ -24,16 +25,16 @@
  * host_addr: this address is invisible to ifconfig
  */
 #define USB_ETHERNET_MODULE_PARAMETERS() \
-	static unsigned qmult = QMULT_DEFAULT;				\
-	module_param(qmult, uint, S_IRUGO|S_IWUSR);			\
+	static unsigned int qmult = QMULT_DEFAULT;			\
+	module_param(qmult, uint, 0644);			\
 	MODULE_PARM_DESC(qmult, "queue length multiplier at high/super speed");\
 									\
 	static char *dev_addr;						\
-	module_param(dev_addr, charp, S_IRUGO);				\
+	module_param(dev_addr, charp, 0444);				\
 	MODULE_PARM_DESC(dev_addr, "Device Ethernet Address");		\
 									\
 	static char *host_addr;						\
-	module_param(host_addr, charp, S_IRUGO);			\
+	module_param(host_addr, charp, 0444);				\
 	MODULE_PARM_DESC(host_addr, "Host Ethernet Address")
 
 struct eth_dev;
@@ -77,8 +78,8 @@ struct gether {
 						struct sk_buff_head *list);
 
 	/* called on network open/close */
-	void				(*open)(struct gether *);
-	void				(*close)(struct gether *);
+	void				(*open)(struct gether *port);
+	void				(*close)(struct gether *port);
 	bool				is_suspend;
 };
 
@@ -90,7 +91,7 @@ struct gether {
 /* variant of gether_setup that allows customizing network device name */
 struct eth_dev *gether_setup_name(struct usb_gadget *g,
 		const char *dev_addr, const char *host_addr,
-		u8 ethaddr[ETH_ALEN], unsigned qmult, const char *netname);
+		u8 ethaddr[ETH_ALEN], unsigned int qmult, const char *netname);
 
 /* netdev setup/teardown as directed by the gadget driver */
 /* gether_setup - initialize one ethernet-over-usb link
@@ -107,7 +108,7 @@ struct eth_dev *gether_setup_name(struct usb_gadget *g,
  */
 static inline struct eth_dev *gether_setup(struct usb_gadget *g,
 		const char *dev_addr, const char *host_addr,
-		u8 ethaddr[ETH_ALEN], unsigned qmult)
+		u8 ethaddr[ETH_ALEN], unsigned int qmult)
 {
 	return gether_setup_name(g, dev_addr, host_addr, ethaddr, qmult, "usb");
 }
@@ -149,32 +150,6 @@ static inline struct net_device *gether_setup_default(void)
  * This associates one ethernet-over-usb link with a gadget.
  */
 void gether_set_gadget(struct net_device *net, struct usb_gadget *g);
-
-/**
- * gether_attach_gadget - Reparent net_device to the gadget device.
- * @net: The network device to reparent.
- * @g: The target USB gadget device to parent to.
- *
- * This function moves the network device to be a child of the USB gadget
- * device in the device hierarchy. This is typically done when the function
- * is bound to a configuration.
- *
- * Returns 0 on success, or a negative error code on failure.
- */
-int gether_attach_gadget(struct net_device *net, struct usb_gadget *g);
-
-/**
- * gether_detach_gadget - Detach net_device from its gadget parent.
- * @net: The network device to detach.
- *
- * This function moves the network device to be a child of the virtual
- * devices parent, effectively detaching it from the USB gadget device
- * hierarchy. This is typically done when the function is unbound
- * from a configuration but the instance is not yet freed.
- */
-void gether_detach_gadget(struct net_device *net);
-
-DEFINE_FREE(detach_gadget, struct net_device *, if (_T) gether_detach_gadget(_T))
 
 /**
  * gether_set_dev_addr - initialize an ethernet-over-usb link with eth address
@@ -250,7 +225,7 @@ void gether_get_host_addr_u8(struct net_device *net, u8 host_mac[ETH_ALEN]);
  * This sets the queue length multiplier of this ethernet-over-usb link.
  * For higher speeds use longer queues.
  */
-void gether_set_qmult(struct net_device *net, unsigned qmult);
+void gether_set_qmult(struct net_device *net, unsigned int qmult);
 
 /**
  * gether_get_qmult - get an ethernet-over-usb link multiplier
@@ -258,7 +233,7 @@ void gether_set_qmult(struct net_device *net, unsigned qmult);
  *
  * This gets the queue length multiplier of this ethernet-over-usb link.
  */
-unsigned gether_get_qmult(struct net_device *net);
+unsigned int gether_get_qmult(struct net_device *net);
 
 /**
  * gether_get_ifname - get an ethernet-over-usb link interface name
@@ -289,8 +264,8 @@ void gether_suspend(struct gether *link);
 void gether_resume(struct gether *link);
 
 /* connect/disconnect is handled by individual functions */
-struct net_device *gether_connect(struct gether *);
-void gether_disconnect(struct gether *);
+struct net_device *gether_connect(struct gether *port);
+void gether_disconnect(struct gether *port);
 
 /* Some controllers can't support CDC Ethernet (ECM) ... */
 static inline bool can_support_ecm(struct usb_gadget *gadget)

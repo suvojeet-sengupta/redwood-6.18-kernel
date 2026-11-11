@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * Copyright (c) 2023, Linaro Limited
  */
 
@@ -17,10 +17,6 @@
 #include "common.h"
 #include "reset.h"
 
-enum {
-	DT_BI_TCXO_PAD,
-};
-
 static struct clk_branch tcsr_edp_clkref_en = {
 	.halt_reg = 0x15130,
 	.halt_check = BRANCH_HALT_DELAY,
@@ -29,10 +25,6 @@ static struct clk_branch tcsr_edp_clkref_en = {
 		.enable_mask = BIT(0),
 		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_edp_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -44,12 +36,8 @@ static struct clk_branch tcsr_pcie_2l_4_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15100,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_pcie_2l_4_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -61,12 +49,8 @@ static struct clk_branch tcsr_pcie_2l_5_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15104,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_pcie_2l_5_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -78,12 +62,8 @@ static struct clk_branch tcsr_pcie_8l_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15108,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_pcie_8l_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -95,12 +75,8 @@ static struct clk_branch tcsr_usb3_mp0_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x1510c,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_usb3_mp0_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -112,12 +88,8 @@ static struct clk_branch tcsr_usb3_mp1_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15110,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_usb3_mp1_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -129,12 +101,8 @@ static struct clk_branch tcsr_usb2_1_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15114,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_usb2_1_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -146,12 +114,8 @@ static struct clk_branch tcsr_ufs_phy_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15118,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_ufs_phy_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -163,12 +127,8 @@ static struct clk_branch tcsr_usb4_1_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15120,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_usb4_1_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -180,12 +140,8 @@ static struct clk_branch tcsr_usb4_2_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15124,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_usb4_2_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -197,12 +153,8 @@ static struct clk_branch tcsr_usb2_2_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x15128,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_usb2_2_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -214,12 +166,8 @@ static struct clk_branch tcsr_pcie_4l_clkref_en = {
 	.clkr = {
 		.enable_reg = 0x1512c,
 		.enable_mask = BIT(0),
-		.hw.init = &(struct clk_init_data){
+		.hw.init = &(const struct clk_init_data) {
 			.name = "tcsr_pcie_4l_clkref_en",
-			.parent_data = &(const struct clk_parent_data){
-				.index = DT_BI_TCXO_PAD,
-			},
-			.num_parents = 1,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -265,11 +213,17 @@ static int tcsr_cc_x1e80100_probe(struct platform_device *pdev)
 	return qcom_cc_probe(pdev, &tcsr_cc_x1e80100_desc);
 }
 
+static void tcsr_cc_x1e80100_sync_state(struct device *dev)
+{
+	qcom_cc_sync_state(dev, &tcsr_cc_x1e80100_desc);
+}
+
 static struct platform_driver tcsr_cc_x1e80100_driver = {
 	.probe = tcsr_cc_x1e80100_probe,
 	.driver = {
 		.name = "tcsrcc-x1e80100",
 		.of_match_table = tcsr_cc_x1e80100_match_table,
+		.sync_state = tcsr_cc_x1e80100_sync_state,
 	},
 };
 

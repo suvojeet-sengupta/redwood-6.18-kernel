@@ -1,14 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for RTC class/drivers.
-#
 
-ccflags-$(CONFIG_RTC_DEBUG)	:= -DDEBUG
+ccflags-y += -I$(src)
 
-obj-$(CONFIG_RTC_LIB)		+= lib.o
-obj-$(CONFIG_RTC_CLASS)		+= rtc-core.o
-obj-$(CONFIG_RTC_MC146818_LIB)	+= rtc-mc146818-lib.o
-rtc-core-y			:= class.o interface.o
+obj-$(CONFIG_RTC_DRV_PM8XXX) += rtc-pm8xxx.o
 
 rtc-core-$(CONFIG_RTC_NVMEM)		+= nvmem.o
 rtc-core-$(CONFIG_RTC_INTF_DEV)		+= dev.o

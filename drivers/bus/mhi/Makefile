@@ -1,5 +1,7 @@
-# Host MHI stack
-obj-$(CONFIG_MHI_BUS) += host/
+# SPDX-License-Identifier: GPL-2.0
 
-# Endpoint MHI stack
-obj-$(CONFIG_MHI_BUS_EP) += ep/
+
+# Subdirectories
+obj-y += devices/
+obj-y += host/
+

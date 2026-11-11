@@ -1,10 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
-menuconfig MAILBOX
-	bool "Mailbox Hardware Support"
-	help
-	  Mailbox is a framework to control hardware communication between
-	  on-chip processors through queued messages and interrupt driven
-	  signals. Say Y if your platform supports hardware mailboxes.
 
 if MAILBOX
 
@@ -191,22 +185,28 @@ config MAILBOX_TEST
 	tristate "Mailbox Test Client"
 	depends on OF
 	depends on HAS_IOMEM
+config QCOM_IPCC
+	tristate "Qualcomm Technologies, Inc. IPCC driver"
+	depends on ARCH_QCOM || COMPILE_TEST
 	help
-	  Test client to help with testing new Controller driver
-	  implementations.
+	  Qualcomm Technologies, Inc. Inter-Processor Communication Controller
+	  (IPCC) driver for MSM devices. The driver provides mailbox support for
+	  sending interrupts to the clients. On the other hand, the driver also
+	  acts as an interrupt controller for receiving interrupts from clients.
+	  Say Y here if you want to build this driver.
 
 config POLARFIRE_SOC_MAILBOX
 	tristate "PolarFire SoC (MPFS) Mailbox"
 	depends on HAS_IOMEM
 	depends on MFD_SYSCON
 	depends on ARCH_MICROCHIP_POLARFIRE || COMPILE_TEST
+config MSM_QMP
+	tristate "QTI Mailbox Protocol(QMP)"
 	help
-	  This driver adds support for the PolarFire SoC (MPFS) mailbox controller.
-
-	  To compile this driver as a module, choose M here. the
-	  module will be called mailbox-mpfs.
-
-	  If unsure, say N.
+	  Say yes to add support for the QTI Mailbox Protocol mailbox driver.
+	  QMP is a lightweight communication protocol for sending messages to
+	  a remote processor. This protocol fits into the Generic Mailbox
+	  Framework. QMP uses a mailbox located in shared memory.
 
 config MCHP_SBI_IPC_MBOX
 	tristate "Microchip Inter-processor Communication (IPC) SBI driver"
@@ -225,8 +225,8 @@ config QCOM_APCS_IPC
 	tristate "Qualcomm APCS IPC driver"
 	depends on ARCH_QCOM || COMPILE_TEST
 	help
-	  Say y here to enable support for the APCS IPC mailbox driver,
-	  providing an interface for invoking the inter-process communication
+	  Qualcomm Technologies, Inc. APCS IPC mailbox driver.
+	  The driver providing an interface for invoking the inter-process communication
 	  signals from the application processor to other masters.
 
 config TEGRA_HSP_MBOX

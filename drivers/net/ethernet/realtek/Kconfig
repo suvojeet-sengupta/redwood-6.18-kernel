@@ -5,7 +5,6 @@
 
 config NET_VENDOR_REALTEK
 	bool "Realtek devices"
-	default y
 	depends on PCI || (PARPORT && X86)
 	help
 	  If you have a network (Ethernet) card belonging to this class, say Y.
@@ -57,7 +56,6 @@ config 8139TOO
 
 config 8139TOO_PIO
 	bool "Use PIO instead of MMIO"
-	default y
 	depends on 8139TOO && !NO_IOPORT_MAP
 	help
 	  This instructs the driver to use programmed I/O ports (PIO) instead

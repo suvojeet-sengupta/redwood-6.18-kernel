@@ -2,6 +2,7 @@
 /*
  * Copyright (c) 2020, The Linux Foundation. All rights reserved.
  * Copyright (c) 2021, Linaro Ltd.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/clk-provider.h>
@@ -22,6 +23,13 @@
 #include "common.h"
 #include "gdsc.h"
 #include "reset.h"
+#include "vdd-level-qcm2290.h"
+
+static DEFINE_VDD_REGULATORS(vdd_cx, VDD_NOMINAL + 1, 1, vdd_corner);
+
+static struct clk_vdd_class *disp_cc_qcm2290_regulators[] = {
+	&vdd_cx,
+};
 
 enum {
 	P_BI_TCXO,
@@ -29,6 +37,7 @@ enum {
 	P_DISP_CC_PLL0_OUT_MAIN,
 	P_DSI0_PHY_PLL_OUT_BYTECLK,
 	P_DSI0_PHY_PLL_OUT_DSICLK,
+	P_DSI1_PHY_PLL_OUT_DSICLK,
 	P_GPLL0_OUT_DIV,
 	P_GPLL0_OUT_MAIN,
 	P_SLEEP_CLK,
@@ -61,6 +70,13 @@ static struct clk_alpha_pll disp_cc_pll0 = {
 			.num_parents = 1,
 			.ops = &clk_alpha_pll_ops,
 		},
+		.vdd_data = {
+			.vdd_class = &vdd_cx,
+			.num_rate_max = VDD_NUM,
+			.rate_max = (unsigned long[VDD_NUM]) {
+				[VDD_MIN] = 1000000000,
+				[VDD_NOMINAL] = 2000000000},
+		},
 	},
 };
 
@@ -71,7 +87,7 @@ static const struct parent_map disp_cc_parent_map_0[] = {
 
 static const struct clk_parent_data disp_cc_parent_data_0[] = {
 	{ .fw_name = "bi_tcxo" },
-	{ .fw_name = "dsi0_phy_pll_out_byteclk" },
+	{ .fw_name = "dsi0_phy_pll_out_byteclk", .name = "dsi0_phy_pll_out_byteclk" },
 };
 
 static const struct parent_map disp_cc_parent_map_1[] = {
@@ -107,11 +123,13 @@ static const struct clk_parent_data disp_cc_parent_data_3[] = {
 static const struct parent_map disp_cc_parent_map_4[] = {
 	{ P_BI_TCXO, 0 },
 	{ P_DSI0_PHY_PLL_OUT_DSICLK, 1 },
+	{ P_DSI1_PHY_PLL_OUT_DSICLK, 2 },
 };
 
 static const struct clk_parent_data disp_cc_parent_data_4[] = {
 	{ .fw_name = "bi_tcxo" },
-	{ .fw_name = "dsi0_phy_pll_out_dsiclk" },
+	{ .fw_name = "dsi0_phy_pll_out_dsiclk", .name = "dsi0_phy_pll_out_dsiclk" },
+	{ .fw_name = "dsi1_phy_pll_out_dsiclk", .name = "dsi1_phy_pll_out_dsiclk" },
 };
 
 static const struct parent_map disp_cc_parent_map_5[] = {
@@ -132,8 +150,16 @@ static struct clk_rcg2 disp_cc_mdss_byte0_clk_src = {
 		.parent_data = disp_cc_parent_data_0,
 		.num_parents = ARRAY_SIZE(disp_cc_parent_data_0),
 		/* For set_rate and set_parent to succeed, parent(s) must be enabled */
-		.flags = CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE,
+		.flags = CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE | CLK_GET_RATE_NOCACHE,
 		.ops = &clk_byte2_ops,
+	},
+	.clkr.vdd_data = {
+		.vdd_class = &vdd_cx,
+		.num_rate_max = VDD_NUM,
+		.rate_max = (unsigned long[VDD_NUM]) {
+			[VDD_MIN] = 19200000,
+			[VDD_LOWER] = 164000000,
+			[VDD_LOW] = 187500000},
 	},
 };
 
@@ -147,6 +173,7 @@ static struct clk_regmap_div disp_cc_mdss_byte0_div_clk_src = {
 			&disp_cc_mdss_byte0_clk_src.clkr.hw,
 		},
 		.num_parents = 1,
+		.flags = CLK_GET_RATE_NOCACHE,
 		.ops = &clk_regmap_div_ops,
 	},
 };
@@ -170,6 +197,14 @@ static struct clk_rcg2 disp_cc_mdss_ahb_clk_src = {
 		.num_parents = ARRAY_SIZE(disp_cc_parent_data_2),
 		.ops = &clk_rcg2_shared_ops,
 	},
+	.clkr.vdd_data = {
+		.vdd_class = &vdd_cx,
+		.num_rate_max = VDD_NUM,
+		.rate_max = (unsigned long[VDD_NUM]) {
+			[VDD_MIN] = 19200000,
+			[VDD_LOW] = 37500000,
+			[VDD_NOMINAL] = 75000000},
+	},
 };
 
 static const struct freq_tbl ftbl_disp_cc_mdss_esc0_clk_src[] = {
@@ -188,6 +223,12 @@ static struct clk_rcg2 disp_cc_mdss_esc0_clk_src = {
 		.parent_data = disp_cc_parent_data_0,
 		.num_parents = ARRAY_SIZE(disp_cc_parent_data_0),
 		.ops = &clk_rcg2_ops,
+	},
+	.clkr.vdd_data = {
+		.vdd_class = &vdd_cx,
+		.num_rate_max = VDD_NUM,
+		.rate_max = (unsigned long[VDD_NUM]) {
+			[VDD_MIN] = 19200000},
 	},
 };
 
@@ -213,6 +254,16 @@ static struct clk_rcg2 disp_cc_mdss_mdp_clk_src = {
 		.flags = CLK_SET_RATE_PARENT,
 		.ops = &clk_rcg2_shared_ops,
 	},
+	.clkr.vdd_data = {
+		.vdd_class = &vdd_cx,
+		.num_rate_max = VDD_NUM,
+		.rate_max = (unsigned long[VDD_NUM]) {
+			[VDD_MIN] = 19200000,
+			[VDD_LOWER] = 192000000,
+			[VDD_LOW] = 256000000,
+			[VDD_LOW_L1] = 307200000,
+			[VDD_NOMINAL] = 384000000},
+	},
 };
 
 static struct clk_rcg2 disp_cc_mdss_pclk0_clk_src = {
@@ -225,8 +276,16 @@ static struct clk_rcg2 disp_cc_mdss_pclk0_clk_src = {
 		.parent_data = disp_cc_parent_data_4,
 		.num_parents = ARRAY_SIZE(disp_cc_parent_data_4),
 		/* For set_rate and set_parent to succeed, parent(s) must be enabled */
-		.flags = CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE,
+		.flags = CLK_SET_RATE_PARENT | CLK_OPS_PARENT_ENABLE | CLK_GET_RATE_NOCACHE,
 		.ops = &clk_pixel_ops,
+	},
+	.clkr.vdd_data = {
+		.vdd_class = &vdd_cx,
+		.num_rate_max = VDD_NUM,
+		.rate_max = (unsigned long[VDD_NUM]) {
+			[VDD_MIN] = 19200000,
+			[VDD_LOWER] = 183310056,
+			[VDD_LOW] = 250000000},
 	},
 };
 
@@ -242,6 +301,12 @@ static struct clk_rcg2 disp_cc_mdss_vsync_clk_src = {
 		.num_parents = ARRAY_SIZE(disp_cc_parent_data_1),
 		.flags = CLK_SET_RATE_PARENT,
 		.ops = &clk_rcg2_shared_ops,
+	},
+	.clkr.vdd_data = {
+		.vdd_class = &vdd_cx,
+		.num_rate_max = VDD_NUM,
+		.rate_max = (unsigned long[VDD_NUM]) {
+			[VDD_MIN] = 19200000},
 	},
 };
 
@@ -261,6 +326,12 @@ static struct clk_rcg2 disp_cc_sleep_clk_src = {
 		.parent_data = disp_cc_parent_data_5,
 		.num_parents = ARRAY_SIZE(disp_cc_parent_data_5),
 		.ops = &clk_rcg2_ops,
+	},
+	.clkr.vdd_data = {
+		.vdd_class = &vdd_cx,
+		.num_rate_max = VDD_NUM,
+		.rate_max = (unsigned long[VDD_NUM]) {
+			[VDD_MIN] = 32764},
 	},
 };
 
@@ -294,7 +365,7 @@ static struct clk_branch disp_cc_mdss_byte0_clk = {
 				&disp_cc_mdss_byte0_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -312,7 +383,7 @@ static struct clk_branch disp_cc_mdss_byte0_intf_clk = {
 				&disp_cc_mdss_byte0_div_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -402,7 +473,7 @@ static struct clk_branch disp_cc_mdss_pclk0_clk = {
 				&disp_cc_mdss_pclk0_clk_src.clkr.hw,
 			},
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -491,7 +562,7 @@ static const struct regmap_config disp_cc_qcm2290_regmap_config = {
 	.fast_io = true,
 };
 
-static const struct qcom_cc_desc disp_cc_qcm2290_desc = {
+static struct qcom_cc_desc disp_cc_qcm2290_desc = {
 	.config = &disp_cc_qcm2290_regmap_config,
 	.clks = disp_cc_qcm2290_clocks,
 	.num_clks = ARRAY_SIZE(disp_cc_qcm2290_clocks),
@@ -499,6 +570,8 @@ static const struct qcom_cc_desc disp_cc_qcm2290_desc = {
 	.num_gdscs = ARRAY_SIZE(disp_cc_qcm2290_gdscs),
 	.resets = disp_cc_qcm2290_resets,
 	.num_resets = ARRAY_SIZE(disp_cc_qcm2290_resets),
+	.clk_regulators = disp_cc_qcm2290_regulators,
+	.num_clk_regulators = ARRAY_SIZE(disp_cc_qcm2290_regulators),
 };
 
 static const struct of_device_id disp_cc_qcm2290_match_table[] = {
@@ -521,24 +594,32 @@ static int disp_cc_qcm2290_probe(struct platform_device *pdev)
 	/* Keep some clocks always-on */
 	qcom_branch_set_clk_en(regmap, 0x604c); /* DISP_CC_XO_CLK */
 
+	disp_cc_qcm2290_desc.gdscs = NULL;
+	disp_cc_qcm2290_desc.num_gdscs = 0;
+
 	ret = qcom_cc_really_probe(&pdev->dev, &disp_cc_qcm2290_desc, regmap);
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to register DISP CC clocks\n");
-		return ret;
-	}
+	if (ret)
+		return dev_err_probe(&pdev->dev, ret, "Failed to register DISP CC clocks\n");
+
+	dev_info(&pdev->dev, "Registered DISP CC clocks\n");
 
 	return ret;
 }
 
+static void disp_cc_qcm2290_sync_state(struct device *dev)
+{
+	qcom_cc_sync_state(dev, &disp_cc_qcm2290_desc);
+}
 static struct platform_driver disp_cc_qcm2290_driver = {
 	.probe = disp_cc_qcm2290_probe,
 	.driver = {
 		.name = "dispcc-qcm2290",
 		.of_match_table = disp_cc_qcm2290_match_table,
+		.sync_state = disp_cc_qcm2290_sync_state,
 	},
 };
 
 module_platform_driver(disp_cc_qcm2290_driver);
 
 MODULE_DESCRIPTION("QTI DISP_CC qcm2290 Driver");
-MODULE_LICENSE("GPL v2");
+MODULE_LICENSE("GPL");

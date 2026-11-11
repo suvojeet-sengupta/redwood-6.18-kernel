@@ -1,28 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
-menuconfig REGULATOR
-	bool "Voltage and Current Regulator Support"
-	select LINEAR_RANGES
-	help
-	  Generic Voltage and Current Regulator support.
-
-	  This framework is designed to provide a generic interface to voltage
-	  and current regulators within the Linux kernel. It's intended to
-	  provide voltage and current control to client or consumer drivers and
-	  also provide status information to user space applications through a
-	  sysfs interface.
-
-	  The intention is to allow systems to dynamically control regulator
-	  output in order to save power and prolong battery life. This applies
-	  to both voltage regulators (where voltage output is controllable) and
-	  current sinks (where current output is controllable).
-
-	  This framework safely compiles out if not selected so that client
-	  drivers can still be used in systems with no software controllable
-	  regulators.
-
-	  If unsure, say no.
-
-
 if REGULATOR
 
 config REGULATOR_DEBUG
@@ -1123,6 +1099,44 @@ config REGULATOR_QCOM_RPM
 	  Say M here if you want to include support for the regulators on the
 	  Qualcomm RPM as a module. The module will be named
 	  "qcom_rpm-regulator".
+config REGULATOR_DEBUG_CONTROL
+	tristate "Regulator debug control support"
+	depends on DEBUG_FS
+	help
+	  This driver supports debugfs based control of regulators for testing
+	  purposes.  It provides a mechanism to vote on the enable state,
+	  voltage, mode, and load current of regulators that make use of its
+	  interface.  It also extends the monitoring interface for regulators.
+
+config REGULATOR_QTI_FIXED_VOLTAGE
+	tristate "QTI fixed voltage regulator support"
+	help
+	  This driver provides support for fixed voltage regulators which are
+	  controlled via a GPIO.  It also supports proxy consumer voting and
+	  debug features utilized on Qualcomm Technologies, Inc. boards.  Use
+	  this driver in place of the fixed voltage regulator driver if these
+	  additional features are required.
+
+config REGULATOR_PROXY_CONSUMER
+	tristate "Boot time regulator proxy consumer support"
+	help
+	  This library provides support for boot time regulator proxy requests.
+	  It can enforce a specified voltage range, set a minimum current,
+	  and/or keep a regulator enabled.  It is needed in circumstances where
+	  reducing one or more of these three quantities will cause hardware to
+	  stop working if performed before the driver managing the hardware has
+	  probed.
+
+config REGULATOR_PROXY_CONSUMER_LEGACY
+	bool "Legacy proxy consumer unvoting support"
+	depends on REGULATOR_PROXY_CONSUMER
+	help
+	  By default, the proxy consumer library unvotes the proxy requests made
+	  for a given device when the sync_state() callback of the device is
+	  called after all of its consumers have probed.  When this legacy
+	  unvoting feature is enabled, unvoting happens unconditionally at
+	  late_initcall_sync() instead of per-device via sync_state()
+	  callback calls.
 
 config REGULATOR_QCOM_RPMH
 	tristate "Qualcomm Technologies, Inc. RPMh regulator driver"
@@ -1744,78 +1758,86 @@ config REGULATOR_TWL4030
 config REGULATOR_UNIPHIER
 	tristate "UniPhier regulator driver"
 	depends on ARCH_UNIPHIER || COMPILE_TEST
+config REGULATOR_RPM_SMD
+	tristate "RPM SMD regulator driver"
 	depends on OF
-	select REGMAP_MMIO
-	default ARCH_UNIPHIER
+	depends on MSM_RPM_SMD
 	help
-	  Support for regulators implemented on Socionext UniPhier SoCs.
+	  Compile in support for the RPM SMD regulator driver which is used for
+	  setting voltages and other parameters of the various power rails
+	  supplied by some Qualcomm Technologies Inc. PMICs. The RPM SMD regulator driver should
+	  be used on systems which contain an RPM which communicates with the
+	  application processor over SMD.
 
-config REGULATOR_RZG2L_VBCTRL
-	tristate "Renesas RZ/G2L USB VBUS regulator driver"
-	depends on RESET_RZG2L_USBPHY_CTRL || COMPILE_TEST
+config REGULATOR_QCOM_AMOLED
+	tristate "Qualcomm Technologies, Inc. AMOLED support"
+	depends on SPMI
+	help
+	  Supports the OLEDB/AB/IBB module in the Qualcomm Technologies, Inc.
+	  PMICs. Exposes regulators to control the triple power supply
+	  positive, negative and bias for the AMOLED display panel. It also
+	  allows configurability for the various bias-voltage parameters.
+
+config REGULATOR_REFGEN
+	tristate "Qualcomm Technologies, Inc. REFGEN regulator driver"
 	depends on OF
-	select REGMAP_MMIO
-	default RESET_RZG2L_USBPHY_CTRL
 	help
-	  Support for VBUS regulators implemented on Renesas RZ/G2L SoCs.
+	  This driver supports control of the REFGEN reference bias generator
+	  block found on some Qualcomm Technologies Inc. SoCs.  A REFGEN
+	  is used by various PHY blocks found inside of the SoC.  It supports
+	  enable/disable control.
 
-config REGULATOR_VCTRL
-	tristate "Voltage controlled regulators"
-	depends on OF
+config REGULATOR_QPNP_LCDB
+        tristate "Qualcomm Technologies, Inc. QPNP LCDB support"
+        depends on SPMI
+        help
+          Supports the LCDB module in the Qualcomm Technologies, Inc.
+          QPNP PMICs. Exposes regulators to control the positive and
+          negative voltage bias for the LCD display panel. It also
+          allows configurability for the various bias-voltage parameters.
+
+config REGULATOR_RPMH
+	tristate "Qualcomm Technologies, Inc. Legacy RPMh regulator driver"
+	depends on QCOM_RPMH
 	help
-	  This driver provides support for voltage regulators whose output
-	  voltage is controlled by the voltage of another regulator.
+	  This driver supports control of PMIC regulators via the RPMh hardware
+	  block found on Qualcomm Technologies Inc. SoCs.  RPMh regulator
+	  control allows for voting on regulator state between multiple
+	  processors within the SoC.
 
-config REGULATOR_VEXPRESS
-	tristate "Versatile Express regulators"
-	depends on VEXPRESS_CONFIG
+config REGULATOR_STUB
+	tristate "Stub Regulator"
 	help
-	  This driver provides support for voltage regulators available
-	  on the ARM Ltd's Versatile Express platform.
+	  This driver adds stub regulator support. It allows for consumers to
+	  request their regulator devices and to use all of the standard
+	  regulator functions. It is useful for bringing up new platforms when
+	  the real hardware based regulator implementation is not yet available.
+	  Consumers can use stub regulator device with proper constraint
+	  checking while the real regulator driver is being developed.
 
-config REGULATOR_VQMMC_IPQ4019
-	tristate "IPQ4019 VQMMC SD LDO regulator support"
-	depends on ARCH_QCOM
+config REGULATOR_QTI_OCP_NOTIFIER
+	tristate "Qualcomm Technologies, Inc. Regulator OCP Notifier Driver"
 	help
-	  This driver provides support for the VQMMC LDO I/0
-	  voltage regulator of the IPQ4019 SD/EMMC controller.
+	  This driver provides support for logging and notifying consumers about
+	  regulator over-current (OCP) events on certain Qualcomm Technologies,
+	  Inc. PMIC devices.  This is useful for debugging as well as for
+	  providing a more graceful recovery mechanism than resetting the entire
+	  system.
 
-config REGULATOR_WM831X
-	tristate "Wolfson Microelectronics WM831x PMIC regulators"
-	depends on MFD_WM831X
-	help
-	  Support the voltage and current regulators of the WM831x series
-	  of PMIC devices.
+config VIRTIO_REGULATOR
+        tristate "Virtio regulator driver"
+        depends on VIRTIO
+        help
+          This is the virtual regulator driver for virtio. It can be used on
+          Qualcomm Technologies Inc. virtual machine. Virtio regulator can vote
+          regulator for pass through peripheral devices via regulator backend in
+          host.
 
-config REGULATOR_WM8350
-	tristate "Wolfson Microelectronics WM8350 AudioPlus PMIC"
-	depends on MFD_WM8350
-	help
-	  This driver provides support for the voltage and current regulators
-	  of the WM8350 AudioPlus PMIC.
-
-config REGULATOR_WM8400
-	tristate "Wolfson Microelectronics WM8400 AudioPlus PMIC"
-	depends on MFD_WM8400
-	help
-	  This driver provides support for the voltage regulators of the
-	  WM8400 AudioPlus PMIC.
-
-config REGULATOR_WM8994
-	tristate "Wolfson Microelectronics WM8994 CODEC"
-	depends on MFD_WM8994
-	help
-	  This driver provides support for the voltage regulators on the
-	  WM8994 CODEC.
-
-config REGULATOR_QCOM_LABIBB
-	tristate "QCOM LAB/IBB regulator support"
-	depends on SPMI || COMPILE_TEST
-	help
-	  This driver supports Qualcomm's LAB/IBB regulators present on the
-	  Qualcomm's PMIC chip pmi8998. QCOM LAB and IBB are SPMI
-	  based PMIC implementations. LAB can be used as positive
-	  boost regulator and IBB can be used as a negative boost regulator
-	  for LCD display panel.
-
+config REGULATOR_RENESAS_SLG5B
+        tristate "Renesas SLG5B Mixed signal Regulator driver"
+        help
+          This driver provides support configuring Renesas SLG5BV49293
+          customizable LDO regulators. It is used to provide power to
+          high performance camera modules and multi-rail systems. It's
+          I2C controlled and register to configure different LDO voltages.
 endif

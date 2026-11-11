@@ -3,27 +3,6 @@
 # Network configuration
 #
 
-menuconfig NET
-	bool "Networking support"
-	select NLATTR
-	select GENERIC_NET_UTILS
-	select BPF
-	help
-	  Unless you really know what you are doing, you should say Y here.
-	  The reason is that some programs need kernel networking support even
-	  when running on a stand-alone machine that isn't connected to any
-	  other computer.
-
-	  If you are upgrading from an older kernel, you
-	  should consider updating your networking tools too because changes
-	  in the kernel and the tools often go hand in hand. The tools are
-	  contained in the package net-tools, the location and version number
-	  of which are given in <file:Documentation/Changes>.
-
-	  For a general introduction to Linux networking, it is highly
-	  recommended to read the NET-HOWTO, available from
-	  <http://www.tldp.org/docs.html#howto>.
-
 if NET
 
 config WANT_COMPAT_NETLINK_MESSAGES
@@ -412,136 +391,55 @@ config NET_DROP_MONITOR
 	  drop statistics, say N here.
 
 endmenu # Network testing
+menu "Networking options"
+
+source "$(KCONFIG_EXT_PREFIX)net/qrtr/Kconfig"
+source "$(KCONFIG_EXT_PREFIX)net/qmsgq/Kconfig"
 
 endmenu # Networking options
 
-source "net/ax25/Kconfig"
-source "net/can/Kconfig"
-source "net/bluetooth/Kconfig"
-source "net/rxrpc/Kconfig"
-source "net/kcm/Kconfig"
-source "net/strparser/Kconfig"
-source "net/mctp/Kconfig"
-
-config FIB_RULES
-	bool
-
-menuconfig WIRELESS
-	bool "Wireless"
-	depends on !S390
-	default y
-
-if WIRELESS
-
-source "net/wireless/Kconfig"
-source "net/mac80211/Kconfig"
-
-endif # WIRELESS
-
-source "net/rfkill/Kconfig"
-source "net/9p/Kconfig"
-source "net/caif/Kconfig"
-source "net/ceph/Kconfig"
-source "net/nfc/Kconfig"
-source "net/psample/Kconfig"
-source "net/ife/Kconfig"
-
-config LWTUNNEL
-	bool "Network light weight tunnels"
-	help
-	  This feature provides an infrastructure to support light weight
-	  tunnels like mpls. There is no netdevice associated with a light
-	  weight tunnel endpoint. Tunnel encapsulation parameters are stored
-	  with light weight tunnel state associated with fib routes.
-
-config LWTUNNEL_BPF
-	bool "Execute BPF program as route nexthop action"
-	depends on LWTUNNEL && INET
-	default y if LWTUNNEL=y
-	help
-	  Allows to run BPF programs as a nexthop action following a route
-	  lookup for incoming and outgoing packets.
-
-config DST_CACHE
-	bool
-	default n
-
-config GRO_CELLS
-	bool
-	default n
-
-config SOCK_VALIDATE_XMIT
-	bool
-
-config NET_IEEE8021Q_HELPERS
-	bool
-
-config NET_SELFTESTS
-	def_tristate PHYLIB
-	depends on PHYLIB && INET
-
-config NET_SOCK_MSG
-	bool
-	default n
-	help
-	  The NET_SOCK_MSG provides a framework for plain sockets (e.g. TCP) or
-	  ULPs (upper layer modules, e.g. TLS) to process L7 application data
-	  with the help of BPF programs.
-
-config NET_DEVLINK
-	bool
-	default n
-
-config PAGE_POOL
-	bool
-
-config PAGE_POOL_STATS
-	default n
-	bool "Page pool stats"
-	depends on PAGE_POOL
-	help
-	  Enable page pool statistics to track page allocation and recycling
-	  in page pools. This option incurs additional CPU cost in allocation
-	  and recycle paths and additional memory cost to store the statistics.
-	  These statistics are only available if this option is enabled and if
-	  the driver using the page pool supports exporting this data.
-
-	  If unsure, say N.
-
-config FAILOVER
-	tristate "Generic failover module"
-	help
-	  The failover module provides a generic interface for paravirtual
-	  drivers to register a netdev and a set of ops with a failover
-	  instance. The ops are used as event handlers that get called to
-	  handle netdev register/unregister/link change/name change events
-	  on slave pci ethernet devices with the same mac address as the
-	  failover netdev. This enables paravirtual drivers to use a
-	  VF as an accelerated low latency datapath. It also allows live
-	  migration of VMs with direct attached VFs by failing over to the
-	  paravirtual datapath when the VF is unplugged.
-
-config ETHTOOL_NETLINK
-	bool "Netlink interface for ethtool"
-	select DIMLIB
-	default y
-	help
-	  An alternative userspace interface for ethtool based on generic
-	  netlink. It provides better extensibility and some new features,
-	  e.g. notification messages.
-
-config NETDEV_ADDR_LIST_TEST
-	tristate "Unit tests for device address list"
-	default KUNIT_ALL_TESTS
-	depends on KUNIT
-
-config NET_TEST
-	tristate "KUnit tests for networking" if !KUNIT_ALL_TESTS
-	depends on KUNIT
-	default KUNIT_ALL_TESTS
-	help
-	  KUnit tests covering core networking infra, such as sk_buff.
-
-	  If unsure, say N.
-
 endif   # if NET
+
+menuconfig NET_SCHED
+	bool "QoS and/or fair queueing"
+	select NET_SCH_FIFO
+	help
+	  When the kernel has several packets to send out over a network
+	  device, it has to decide which ones to send first, which ones to
+	  delay, and which ones to drop. This is the job of the queueing
+	  disciplines, several different algorithms for how to do this
+	  "fairly" have been proposed.
+
+	  If you say N here, you will get the standard packet scheduler, which
+	  is a FIFO (first come, first served). If you say Y here, you will be
+	  able to choose from among several alternative algorithms which can
+	  then be attached to different network devices. This is useful for
+	  example if some of your network devices are real time devices that
+	  need a certain minimum data flow rate, or if you need to limit the
+	  maximum data flow rate for traffic which matches specified criteria.
+	  This code is considered to be experimental.
+
+	  To administer these schedulers, you'll need the user-level utilities
+	  from the package iproute2+tc at
+	  <https://www.kernel.org/pub/linux/utils/net/iproute2/>.  That package
+	  also contains some documentation; for more, check out
+	  <http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2>.
+
+	  This Quality of Service (QoS) support will enable you to use
+	  Differentiated Services (diffserv) and Resource Reservation Protocol
+	  (RSVP) on your Linux router if you also say Y to the corresponding
+	  classifiers below.  Documentation and software is at
+	  <http://diffserv.sourceforge.net/>.
+
+	  If you say Y here and to "/proc file system" below, you will be able
+	  to read status information about packet schedulers from the file
+	  /proc/net/psched.
+
+	  The available schedulers are listed in the following questions; you
+	  can say Y to as many as you like. If unsure, say N now.
+
+if NET_SCHED
+
+source "$(KCONFIG_EXT_PREFIX)net/sched/Kconfig"
+
+endif # NET_SCHED

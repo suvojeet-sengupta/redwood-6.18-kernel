@@ -24,5 +24,3 @@ set -e
 rm -f scripts/selinux/genheaders/genheaders
 
 rm -f *.spec
-
-rm -f lib/test_fortify.log

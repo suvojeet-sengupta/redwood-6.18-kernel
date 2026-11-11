@@ -98,30 +98,30 @@ obj-$(CONFIG_LEDS_UPBOARD)		+= leds-upboard.o
 obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
 obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
 obj-$(CONFIG_LEDS_WRAP)			+= leds-wrap.o
+ccflags-y += -I$(src)
 
-# Kinetic ExpressWire Protocol
-obj-$(CONFIG_LEDS_EXPRESSWIRE)		+= leds-expresswire.o
+# Subdirectories
+obj-y += flash/
+obj-y += rgb/
 
-# LED SPI Drivers
-obj-$(CONFIG_LEDS_CR0014114)		+= leds-cr0014114.o
-obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
-obj-$(CONFIG_LEDS_EL15203000)		+= leds-el15203000.o
-obj-$(CONFIG_LEDS_SPI_BYTE)		+= leds-spi-byte.o
+obj-$(CONFIG_LEDS_QTI_FLASH) += leds-qti-flash.o
 
-# LED Userspace Drivers
-obj-$(CONFIG_LEDS_USER)			+= uleds.o
+obj-$(CONFIG_LEDS_TRIGGER_PATTERN) += ledtrig-pattern.o
+ledtrig-pattern-objs += trigger/ledtrig-pattern.o
 
-# Flash and Torch LED Drivers
-obj-$(CONFIG_LEDS_CLASS_FLASH)		+= flash/
+obj-$(CONFIG_LEDS_QPNP_VIBRATOR_LDO) += leds-qpnp-vibrator-ldo.o
 
-# RGB LED Drivers
-obj-$(CONFIG_LEDS_CLASS_MULTICOLOR)	+= rgb/
+obj-$(CONFIG_LEDS_AW2016) += leds-aw2016.o
 
-# LED Triggers
-obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/
+obj-$(CONFIG_LEDS_AW200xx) += leds-aw200xx.o
 
-# LED Blink
-obj-y					+= blink/
+obj-$(CONFIG_LEDS_USER_AW21104) += leds-user-aw21104.o
+
+obj-$(CONFIG_LEDS_BYS_AW21104) += leds-bys-aw21104.o
+
+obj-$(CONFIG_LEDS_USER_LP5814) += leds-user-lp5814.o
+
+obj-$(CONFIG_LEDS_ETIRLED_LM3645) += leds-etirled-lm3645.o
 
 # Simatic LED drivers
 obj-y					+= simatic/

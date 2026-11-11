@@ -1,14 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for the linux networking.
-#
-# 2 Sep 2000, Christoph Hellwig <hch@infradead.org>
-# Rewritten to use lists instead of if-statements.
-#
 
-obj-y				:= devres.o socket.o core/
 
-obj-$(CONFIG_COMPAT)		+= compat.o
+# Subdirectories
+obj-y += mac80211/
+obj-y += qmsgq/
+obj-y += qrtr/
+obj-y += sched/
+obj-y += wireless/
 
 # LLC has to be linked before the files in net/802/
 obj-$(CONFIG_LLC)		+= llc/

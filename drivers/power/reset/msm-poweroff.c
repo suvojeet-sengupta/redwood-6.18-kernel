@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/delay.h>
@@ -12,11 +13,13 @@
 #include <linux/module.h>
 #include <linux/reboot.h>
 #include <linux/pm.h>
+#include <linux/firmware/qcom/qcom_scm.h>
 
 static void __iomem *msm_ps_hold;
 
 static int do_msm_poweroff(struct sys_off_data *data)
 {
+	qcom_scm_deassert_ps_hold();
 	writel(0, msm_ps_hold);
 	mdelay(10000);
 
@@ -30,7 +33,7 @@ static int msm_restart_probe(struct platform_device *pdev)
 		return PTR_ERR(msm_ps_hold);
 
 	devm_register_sys_off_handler(&pdev->dev, SYS_OFF_MODE_RESTART,
-				      128, do_msm_poweroff, NULL);
+				      200, do_msm_poweroff, NULL);
 
 	devm_register_sys_off_handler(&pdev->dev, SYS_OFF_MODE_POWER_OFF,
 				      SYS_OFF_PRIO_DEFAULT, do_msm_poweroff,
@@ -52,4 +55,18 @@ static struct platform_driver msm_restart_driver = {
 		.of_match_table = of_match_ptr(of_msm_restart_match),
 	},
 };
-builtin_platform_driver(msm_restart_driver);
+
+static int __init msm_restart_init(void)
+{
+	return platform_driver_register(&msm_restart_driver);
+}
+module_init(msm_restart_init);
+
+static __exit void msm_restart_exit(void)
+{
+	platform_driver_unregister(&msm_restart_driver);
+}
+module_exit(msm_restart_exit);
+
+MODULE_DESCRIPTION("MSM Poweroff Driver");
+MODULE_LICENSE("GPL");

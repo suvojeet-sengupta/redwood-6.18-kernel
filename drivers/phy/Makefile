@@ -1,7 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for the phy drivers.
-#
 
 obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
 obj-$(CONFIG_GENERIC_PHY_MIPI_DPHY)	+= phy-core-mipi-dphy.o
@@ -42,3 +39,7 @@ obj-y					+= allwinner/	\
 					   tegra/	\
 					   ti/		\
 					   xilinx/
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_PHY_NXP_PTN3222) += phy-nxp-ptn3222.o
+

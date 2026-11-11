@@ -17,7 +17,7 @@ check against additional commit ranges with the -b and -p options.
 The script will not check UAPI headers for architectures other than the one
 defined in ARCH.
 
-Usage: $name [-b BASE_REF] [-p PAST_REF] [-j N] [-l ERROR_LOG] [-i] [-q] [-v]
+Usage: $name [-b BASE_REF] [-p PAST_REF] [-j N] [-l ERROR_LOG] [-q] [-v]
 
 Options:
     -b BASE_REF    Base git reference to use for comparison. If unspecified or empty,
@@ -28,25 +28,26 @@ Options:
                    that exist on PAST_REF will be checked for compatibility.
     -j JOBS        Number of checks to run in parallel (default: number of CPU cores).
     -l ERROR_LOG   Write error log to file (default: no error log is generated).
-    -i             Ignore ambiguous changes that may or may not break UAPI compatibility.
-    -q             Quiet operation.
+    -q             Quiet operation (suppress stdout, still print stderr).
     -v             Verbose operation (print more information about each header being checked).
 
 Environmental args:
     ABIDIFF  Custom path to abidiff binary
     CC       C compiler (default is "gcc")
-    ARCH     Target architecture for the UAPI check (default is host arch)
+    ARCH     Target architecture of C compiler (default is host arch)
 
 Exit codes:
     $SUCCESS) Success
     $FAIL_ABI) ABI difference detected
     $FAIL_PREREQ) Prerequisite not met
+    $FAIL_COMPILE) Compilation error
 EOF
 }
 
 readonly SUCCESS=0
 readonly FAIL_ABI=1
 readonly FAIL_PREREQ=2
+readonly FAIL_COMPILE=3
 
 # Print to stderr
 eprintf() {
@@ -54,91 +55,13 @@ eprintf() {
 	printf "$@" >&2
 }
 
-# Expand an array with a specific character (similar to Python string.join())
-join() {
-	local IFS="$1"
-	shift
-	printf "%s" "$*"
-}
-
-# Create abidiff suppressions
-gen_suppressions() {
-	# Common enum variant names which we don't want to worry about
-	# being shifted when new variants are added.
-	local -a enum_regex=(
-		".*_AFTER_LAST$"
-		".*_CNT$"
-		".*_COUNT$"
-		".*_END$"
-		".*_LAST$"
-		".*_MASK$"
-		".*_MAX$"
-		".*_MAX_BIT$"
-		".*_MAX_BPF_ATTACH_TYPE$"
-		".*_MAX_ID$"
-		".*_MAX_SHIFT$"
-		".*_NBITS$"
-		".*_NETDEV_NUMHOOKS$"
-		".*_NFT_META_IIFTYPE$"
-		".*_NL80211_ATTR$"
-		".*_NLDEV_NUM_OPS$"
-		".*_NUM$"
-		".*_NUM_ELEMS$"
-		".*_NUM_IRQS$"
-		".*_SIZE$"
-		".*_TLSMAX$"
-		"^MAX_.*"
-		"^NUM_.*"
-	)
-
-	# Common padding field names which can be expanded into
-	# without worrying about users.
-	local -a padding_regex=(
-		".*end$"
-		".*pad$"
-		".*pad[0-9]?$"
-		".*pad_[0-9]?$"
-		".*padding$"
-		".*padding[0-9]?$"
-		".*padding_[0-9]?$"
-		".*res$"
-		".*resv$"
-		".*resv[0-9]?$"
-		".*resv_[0-9]?$"
-		".*reserved$"
-		".*reserved[0-9]?$"
-		".*reserved_[0-9]?$"
-		".*rsvd[0-9]?$"
-		".*unused$"
-	)
-
-	cat << EOF
-[suppress_type]
-  type_kind = enum
-  changed_enumerators_regexp = $(join , "${enum_regex[@]}")
-EOF
-
-	for p in "${padding_regex[@]}"; do
-		cat << EOF
-[suppress_type]
-  type_kind = struct
-  has_data_member_inserted_at = offset_of_first_data_member_regexp(${p})
-EOF
-	done
-
-if [ "$IGNORE_AMBIGUOUS_CHANGES" = "true" ]; then
-	cat << EOF
-[suppress_type]
-  type_kind = struct
-  has_data_member_inserted_at = end
-  has_size_change = yes
-EOF
-fi
-}
-
 # Check if git tree is dirty
 tree_is_dirty() {
-	! git diff --quiet
+	if git diff --quiet; then
+		return 1
+	else
+		return 0
+	fi
 }
 
 # Get list of files installed in $ref
@@ -171,6 +94,8 @@ add_to_incompat_list() {
 	# The makefile also skips all asm-generic files, but prints "asm-generic/%"
 	# which won't work for our grep match. Instead, print something grep will match.
 	printf "asm-generic/.*\.h\n" >> "$INCOMPAT_LIST"
+
+	sort -u -o "$INCOMPAT_LIST" "$INCOMPAT_LIST"
 }
 
 # Compile the simple test app
@@ -178,11 +103,8 @@ do_compile() {
 	local -r inc_dir="$1"
 	local -r header="$2"
 	local -r out="$3"
-	printf "int f(void) { return 0; }\n" | \
-		"$CC" \
-		  -shared \
-		  -nostdlib \
-		  -fPIC \
+	printf "int main(void) { return 0; }\n" | \
+		"$CC" -c \
 		  -o "$out" \
 		  -x c \
 		  -O0 \
@@ -196,8 +118,7 @@ do_compile() {
 
 # Run make headers_install
 run_make_headers_install() {
-	local -r ref="$1"
-	local -r install_dir="$(get_header_tree "$ref")"
+	local -r install_dir="$1"
 	make -j "$MAX_THREADS" ARCH="$ARCH" INSTALL_HDR_PATH="$install_dir" \
 		headers_install > /dev/null
 }
@@ -214,17 +135,15 @@ install_headers() {
 				| (cd "$TMP_DIR" && tar xf -)
 			(
 				cd "${TMP_DIR}/${ref}-archive"
-				run_make_headers_install "$ref"
+				run_make_headers_install "${TMP_DIR}/${ref}/usr"
 				add_to_incompat_list "$ref" "$INCOMPAT_LIST"
 			)
 		else
-			run_make_headers_install "$ref"
+			run_make_headers_install "${TMP_DIR}/${ref}/usr"
 			add_to_incompat_list "$ref" "$INCOMPAT_LIST"
 		fi
 		printf "OK\n"
 	done
-	sort -u -o "$INCOMPAT_LIST" "$INCOMPAT_LIST"
-	sed -i -e '/^$/d' "$INCOMPAT_LIST"
 }
 
 # Print the path to the headers_install tree for a given ref
@@ -237,14 +156,13 @@ get_header_tree() {
 check_uapi_files() {
 	local -r base_ref="$1"
 	local -r past_ref="$2"
-	local -r abi_error_log="$3"
 
 	local passed=0;
 	local failed=0;
 	local -a threads=()
 	set -o errexit
 
-	printf "Checking changes to UAPI headers between %s and %s...\n" "$past_ref" "${base_ref:-dirty tree}"
+	printf "Checking changes to UAPI headers between %s and %s\n" "$past_ref" "${base_ref:-dirty tree}"
 	# Loop over all UAPI headers that were installed by $past_ref (if they only exist on $base_ref,
 	# there's no way they're broken and no way to compare anyway)
 	while read -r file; do
@@ -269,28 +187,12 @@ check_uapi_files() {
 		fi
 	done
 
-	if [ -n "$abi_error_log" ]; then
-		printf 'Generated by "%s %s" from git ref %s\n\n' \
-			"$0" "$*" "$(git rev-parse HEAD)" > "$abi_error_log"
-	fi
-
-	while read -r error_file; do
-		{
-			cat "$error_file"
-			printf "\n\n"
-		} | tee -a "${abi_error_log:-/dev/null}" >&2
-	done < <(find "$TMP_DIR" -type f -name '*.error' | sort)
-
 	total="$((passed + failed))"
 	if [ "$failed" -gt 0 ]; then
 		eprintf "error - %d/%d UAPI headers compatible with %s appear _not_ to be backwards compatible\n" \
 			"$failed" "$total" "$ARCH"
-		if [ -n "$abi_error_log" ]; then
-			eprintf "Failure summary saved to %s\n" "$abi_error_log"
-		fi
 	else
-		printf "All %d UAPI headers compatible with %s appear to be backwards compatible\n" \
-			"$total" "$ARCH"
+		printf "All %d UAPI headers compatible with %s appear to be backwards compatible\n" "$total" "$ARCH"
 	fi
 
 	return "$failed"
@@ -306,10 +208,9 @@ check_individual_file() {
 	local -r past_header="$(get_header_tree "$past_ref")/${file}"
 
 	if [ ! -f "$base_header" ]; then
-		mkdir -p "$(dirname "$base_header")"
-		printf "==== UAPI header %s was removed between %s and %s ====" \
-			"$file" "$past_ref" "$base_ref" \
-				> "${base_header}.error"
+		printf "!!! UAPI header %s was incorrectly removed between %s and %s !!!\n" \
+			"$file" "$past_ref" "${base_ref:-dirty tree}" \
+				| tee "${base_header}.error" >&2
 		return 1
 	fi
 
@@ -324,50 +225,33 @@ compare_abi() {
 	local -r base_ref="$4"
 	local -r past_ref="$5"
 	local -r log="${TMP_DIR}/log/${file}.log"
-	local -r error_log="${TMP_DIR}/log/${file}.error"
 
 	mkdir -p "$(dirname "$log")"
 
 	if ! do_compile "$(get_header_tree "$base_ref")/include" "$base_header" "${base_header}.bin" 2> "$log"; then
-		{
-			warn_str=$(printf "==== Could not compile version of UAPI header %s at %s ====\n" \
-				"$file" "$base_ref")
-			printf "%s\n" "$warn_str"
-			cat "$log"
-			printf -- "=%.0s" $(seq 0 ${#warn_str})
-		} > "$error_log"
-		return 1
+		eprintf "error - couldn't compile version of UAPI header %s at %s\n" "$file" "$base_ref"
+		cat "$log" >&2
+		exit "$FAIL_COMPILE"
 	fi
 
 	if ! do_compile "$(get_header_tree "$past_ref")/include" "$past_header" "${past_header}.bin" 2> "$log"; then
-		{
-			warn_str=$(printf "==== Could not compile version of UAPI header %s at %s ====\n" \
-				"$file" "$past_ref")
-			printf "%s\n" "$warn_str"
-			cat "$log"
-			printf -- "=%.0s" $(seq 0 ${#warn_str})
-		} > "$error_log"
-		return 1
+		eprintf "error - couldn't compile version of UAPI header %s at %s\n" "$file" "$past_ref"
+		cat "$log" >&2
+		exit "$FAIL_COMPILE"
 	fi
 
 	local ret=0
-	"$ABIDIFF" --non-reachable-types \
-		--suppressions "$SUPPRESSIONS" \
-		"${past_header}.bin" "${base_header}.bin" > "$log" || ret="$?"
+	"$ABIDIFF" --non-reachable-types "${past_header}.bin" "${base_header}.bin" \
+		> "$log" || ret="$?"
 	if [ "$ret" -eq 0 ]; then
 		if [ "$VERBOSE" = "true" ]; then
-			printf "No ABI differences detected in %s from %s -> %s\n" \
-				"$file" "$past_ref" "$base_ref"
+			printf "No ABI differences detected in %s from %s -> %s\n" "$file" "$past_ref" "${base_ref:-dirty tree}"
 		fi
 	else
 		# Bits in abidiff's return code can be used to determine the type of error
-		if [ $((ret & 0x2)) -gt 0 ]; then
+		if [ $((ret & 0x1)) -gt 0 ]; then
 			eprintf "error - abidiff did not run properly\n"
 			exit 1
-		fi
-
-		if [ "$IGNORE_AMBIGUOUS_CHANGES" = "true" ] && [ "$ret" -eq 4 ]; then
-			return 0
 		fi
 
 		# If the only changes were additions (not modifications to existing APIs), then
@@ -377,31 +261,34 @@ compare_abi() {
 			return 0
 		fi
 
+
 		{
-			warn_str=$(printf "==== ABI differences detected in %s from %s -> %s ====" \
-				"$file" "$past_ref" "$base_ref")
-			printf "%s\n" "$warn_str"
+			printf "!!! ABI differences detected in %s from %s -> %s !!!\n\n" "$file" "$past_ref" "${base_ref:-dirty tree}"
 			sed  -e '/summary:/d' -e '/changed type/d' -e '/^$/d' -e 's/^/  /g' "$log"
-			printf -- "=%.0s" $(seq 0 ${#warn_str})
-			if cmp "$past_header" "$base_header" > /dev/null 2>&1; then
+
+			if ! cmp "$past_header" "$base_header" > /dev/null 2>&1; then
+				printf "\nHeader file diff (after headers_install):\n"
+				diff -Naur "$past_header" "$base_header" \
+					| sed -e "s|${past_header}|${past_ref}/${file}|g" \
+					      -e "s|${base_header}|${base_ref:-dirty}/${file}|g"
+				printf "\n"
+			else
 				printf "\n%s did not change between %s and %s...\n" "$file" "$past_ref" "${base_ref:-dirty tree}"
 				printf "It's possible a change to one of the headers it includes caused this error:\n"
 				grep '^#include' "$base_header"
 				printf "\n"
 			fi
-		} > "$error_log"
+		} | tee "${base_header}.error" >&2
 
 		return 1
 	fi
 }
 
-# Check that a minimum software version number is satisfied
 min_version_is_satisfied() {
 	local -r min_version="$1"
 	local -r version_installed="$2"
 
-	printf "%s\n%s\n" "$min_version" "$version_installed" \
-		| sort -Vc > /dev/null 2>&1
+	printf "%s\n%s\n" "$min_version" "$version_installed" | sort -Vc > /dev/null 2>&1
 }
 
 # Make sure we have the tools we need and the arguments make sense
@@ -413,7 +300,7 @@ check_deps() {
 		ARCH="x86"
 	fi
 
-	local -r abidiff_min_version="2.4"
+	local -r abidiff_min_version="1.7"
 	local -r libdw_min_version_if_clang="0.171"
 
 	if ! command -v "$ABIDIFF" > /dev/null 2>&1; then
@@ -509,9 +396,6 @@ run() {
 	readonly INCOMPAT_LIST="${TMP_DIR}/incompat_list.txt"
 	touch "$INCOMPAT_LIST"
 
-	readonly SUPPRESSIONS="${TMP_DIR}/suppressions.txt"
-	gen_suppressions > "$SUPPRESSIONS"
-
 	# Run make install_headers for both refs
 	install_headers "$base_ref" "$past_ref"
 
@@ -521,7 +405,15 @@ run() {
 		exit "$SUCCESS"
 	fi
 
-	if ! check_uapi_files "$base_ref" "$past_ref" "$abi_error_log"; then
+	if ! check_uapi_files "$base_ref" "$past_ref"; then
+		eprintf "error - UAPI header ABI check failed\n"
+		if [ -n "$abi_error_log" ]; then
+			{
+				printf 'Generated by "%s %s" from git ref %s\n\n' "$0" "$*" "$(git rev-parse HEAD)"
+				find "$TMP_DIR" -type f -name '*.error' -exec cat {} +
+			} > "$abi_error_log"
+			eprintf "Failure summary saved to %s\n" "$abi_error_log"
+		fi
 		exit "$FAIL_ABI"
 	fi
 }
@@ -529,10 +421,9 @@ run() {
 main() {
 	MAX_THREADS=$(nproc)
 	VERBOSE="false"
-	IGNORE_AMBIGUOUS_CHANGES="false"
 	quiet="false"
 	local base_ref=""
-	while getopts "hb:p:j:l:iqv" opt; do
+	while getopts "hb:p:mj:l:qv" opt; do
 		case $opt in
 		h)
 			print_usage
@@ -550,9 +441,6 @@ main() {
 		l)
 			abi_error_log="$OPTARG"
 			;;
-		i)
-			IGNORE_AMBIGUOUS_CHANGES="true"
-			;;
 		q)
 			quiet="true"
 			VERBOSE="false"
@@ -565,6 +453,7 @@ main() {
 			exit "$FAIL_PREREQ"
 		esac
 	done
+
 
 	if [ "$quiet" = "true" ]; then
 		exec > /dev/null 2>&1

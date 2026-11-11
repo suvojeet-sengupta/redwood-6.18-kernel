@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for the input misc drivers.
-#
 
-# Each configuration option enables a list of files.
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_INPUT_PM8941_PWRKEY) += pm8941-pwrkey.o
+
+obj-$(CONFIG_INPUT_QCOM_HV_HAPTICS) += qcom-hv-haptics.o
 
 obj-$(CONFIG_INPUT_88PM860X_ONKEY)	+= 88pm860x_onkey.o
 obj-$(CONFIG_INPUT_88PM80X_ONKEY)	+= 88pm80x_onkey.o

@@ -19,7 +19,7 @@
 #include <linux/workqueue.h>
 #include <linux/mailbox_client.h>
 
-#include "rpmsg_internal.h"
+#include "drivers/rpmsg/rpmsg_internal.h"
 #include "qcom_glink_native.h"
 
 #define RPM_TOC_SIZE		256
@@ -352,13 +352,16 @@ static int glink_rpm_probe(struct platform_device *pdev)
 		return PTR_ERR(glink);
 	}
 
+	qcom_glink_native_set_rx_wakeup(glink, false);
 	rpm->glink = glink;
 
 	platform_set_drvdata(pdev, rpm);
 
 	enable_irq(rpm->irq);
 
-	return 0;
+	ret = qcom_glink_native_start(glink);
+
+	return ret;
 }
 
 static void glink_rpm_remove(struct platform_device *pdev)
@@ -385,6 +388,7 @@ static struct platform_driver glink_rpm_driver = {
 	.driver = {
 		.name = "qcom_glink_rpm",
 		.of_match_table = glink_rpm_of_match,
+		.pm = &glink_native_pm_ops,
 	},
 };
 

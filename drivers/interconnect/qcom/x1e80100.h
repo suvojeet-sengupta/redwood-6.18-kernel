@@ -1,9 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * X1E80100 interconnect IDs
- *
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
- * Copyright (c) 2023, Linaro Limited
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #ifndef __DRIVERS_INTERCONNECT_QCOM_X1E80100_H

@@ -1,9 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
-CFLAGS_trace.o				:= -I$(src)
 
-obj-$(CONFIG_TYPEC_UCSI)		+= typec_ucsi.o
+ccflags-y += -I$(src)
 
-typec_ucsi-y				:= ucsi.o
+obj-$(CONFIG_UCSI_QTI_GLINK) += ucsi_qti_glink.o
 
 typec_ucsi-$(CONFIG_DEBUG_FS)		+= debugfs.o
 

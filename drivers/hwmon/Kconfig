@@ -3,38 +3,7 @@
 # Hardware monitoring chip drivers configuration
 #
 
-menuconfig HWMON
-	tristate "Hardware Monitoring support"
-	depends on HAS_IOMEM
-	default y
-	help
-	  Hardware monitoring devices let you monitor the hardware health
-	  of a system. Most modern motherboards include such a device. It
-	  can include temperature sensors, voltage sensors, fan speed
-	  sensors and various additional features such as the ability to
-	  control the speed of the fans. If you want this support you
-	  should say Y here and also to the specific driver(s) for your
-	  sensors chip(s) below.
-
-	  To find out which specific driver(s) you need, use the
-	  sensors-detect script from the lm_sensors package.  Read
-	  <file:Documentation/hwmon/userspace-tools.rst> for details.
-
-	  This support can also be built as a module. If so, the module
-	  will be called hwmon.
-
 if HWMON
-
-config HWMON_VID
-	tristate
-
-config HWMON_DEBUG_CHIP
-	bool "Hardware Monitoring Chip debugging messages"
-	help
-	  Say Y here if you want the I2C chip drivers to produce a bunch of
-	  debug messages to the system log.  Select this if you are having
-	  a problem with I2C support and want to see more of what is going
-	  on.
 
 comment "Native drivers"
 
@@ -932,20 +901,21 @@ config SENSORS_IT87
 	depends on HAS_IOPORT
 	depends on !PPC
 	select HWMON_VID
+config SENSORS_QTI_AMOLED_ECM
+	tristate "Qualcomm Technologies, Inc. AMOLED Current Monitor"
+	depends on SPMI
 	help
-	  If you say yes here you get support for ITE IT8705F, IT8712F, IT8716F,
-	  IT8718F, IT8720F, IT8721F, IT8726F, IT8728F, IT8732F, IT8758E,
-	  IT8771E, IT8772E, IT8781F, IT8782F, IT8783E/F, IT8786E, IT8790E,
-	  IT8603E, IT8620E, IT8623E, and IT8628E sensor chips, and the SiS950
-	  clone.
+	  Qualcomm Technologies, Inc. ECM driver supports measurement of
+	  OLED display power with a time granularity in sub-frame or
+	  multiple frames of image data. The measurement can be for a short
+	  period (N frames) or a long period (continuous mode).
 
-	  This driver can also be built as a module. If so, the module
-	  will be called it87.
+	  To compile this driver as module, choose M here: the module will
+	  be called qti_amoled_ecm.
 
-config SENSORS_JC42
-	tristate "JEDEC JC42.4 compliant memory module temperature sensors"
-	depends on I2C
-	select REGMAP_I2C
+config SENSORS_QTI_BTL
+	tristate "Qualcomm Technologies, Inc. Battery Temperature Logging"
+	depends on SPMI
 	help
 	  If you say yes here, you get support for JEDEC JC42.4 compliant
 	  temperature sensors, which are used on many DDR3 memory modules for
@@ -2723,7 +2693,11 @@ config SENSORS_HP_WMI
 
 	  This driver can also be built as a module. If so, the module
 	  will be called hp_wmi_sensors.
+	  Qualcomm Technologies, Inc. Battery temperature logging driver
+	  supports reading back how long device spends within a given
+	  set of temperature ranges.
 
-endif # ACPI
+	  To compile this driver as module, choose M here: the module will
+	  be called qti_btl.
 
 endif # HWMON

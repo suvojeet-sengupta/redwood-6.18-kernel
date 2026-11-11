@@ -1,7 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for HW Random Number Generator (RNG) device drivers.
-#
 
 obj-$(CONFIG_HW_RANDOM) += rng-core.o
 rng-core-y := core.o
@@ -52,3 +49,6 @@ obj-$(CONFIG_HW_RANDOM_CN10K) += cn10k-rng.o
 obj-$(CONFIG_HW_RANDOM_POLARFIRE_SOC) += mpfs-rng.o
 obj-$(CONFIG_HW_RANDOM_ROCKCHIP) += rockchip-rng.o
 obj-$(CONFIG_HW_RANDOM_JH7110) += jh7110-trng.o
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_HW_RANDOM_VIRTIO) += virtio-rng.o

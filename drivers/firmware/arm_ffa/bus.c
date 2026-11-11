@@ -12,6 +12,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/types.h>
+#include <linux/mm.h>
 
 #include "common.h"
 
@@ -26,8 +27,6 @@ static int ffa_device_match(struct device *dev, const struct device_driver *drv)
 
 	id_table = to_ffa_driver(drv)->id_table;
 	ffa_dev = to_ffa_dev(dev);
-	if (!id_table)
-		return 0;
 
 	while (!uuid_is_null(&id_table->uuid)) {
 		/*
@@ -89,7 +88,7 @@ static ssize_t partition_id_show(struct device *dev,
 {
 	struct ffa_device *ffa_dev = to_ffa_dev(dev);
 
-	return sprintf(buf, "0x%04x\n", ffa_dev->vm_id);
+	return scnprintf(buf, PAGE_SIZE, "0x%04x\n", ffa_dev->vm_id);
 }
 static DEVICE_ATTR_RO(partition_id);
 
@@ -98,7 +97,7 @@ static ssize_t uuid_show(struct device *dev, struct device_attribute *attr,
 {
 	struct ffa_device *ffa_dev = to_ffa_dev(dev);
 
-	return sprintf(buf, "%pUb\n", &ffa_dev->uuid);
+	return scnprintf(buf, PAGE_SIZE, "%pUb\n", &ffa_dev->uuid);
 }
 static DEVICE_ATTR_RO(uuid);
 
@@ -125,7 +124,7 @@ int ffa_driver_register(struct ffa_driver *driver, struct module *owner,
 {
 	int ret;
 
-	if (!driver->probe || !driver->id_table)
+	if (!driver->probe)
 		return -EINVAL;
 
 	driver->driver.bus = &ffa_bus_type;

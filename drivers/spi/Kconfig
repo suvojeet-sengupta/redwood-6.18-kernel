@@ -2,49 +2,12 @@
 #
 # SPI driver configuration
 #
-menuconfig SPI
-	bool "SPI support"
-	depends on HAS_IOMEM
-	help
-	  The "Serial Peripheral Interface" is a low level synchronous
-	  protocol.  Chips that support SPI can have data transfer rates
-	  up to several tens of Mbit/sec.  Chips are addressed with a
-	  controller and a chipselect.  Most SPI slaves don't support
-	  dynamic device discovery; some are even write-only or read-only.
-
-	  SPI is widely used by microcontrollers to talk with sensors,
-	  eeprom and flash memory, codecs and various other controller
-	  chips, analog to digital (and d-to-a) converters, and more.
-	  MMC and SD cards can be accessed using SPI protocol; and for
-	  DataFlash cards used in MMC sockets, SPI must always be used.
-
-	  SPI is one of a family of similar protocols using a four wire
-	  interface (select, clock, data in, data out) including Microwire
-	  (half duplex), SSP, SSI, and PSP.  This driver framework should
-	  work with most such devices and controllers.
 
 if SPI
-
-config SPI_DEBUG
-	bool "Debug support for SPI drivers"
-	depends on DEBUG_KERNEL
-	help
-	  Say "yes" to enable debug messaging (like dev_dbg and pr_debug),
-	  sysfs, and debugfs support in SPI controller and protocol drivers.
 
 #
 # MASTER side ... talking to discrete SPI slave chips including microcontrollers
 #
-
-config SPI_MASTER
-#	bool "SPI Master Support"
-	bool
-	default SPI
-	help
-	  If your system has an master-capable SPI controller (which
-	  provides the clock and chipselect), you can enable that
-	  controller and the protocol drivers for the SPI slave chips
-	  that are connected.
 
 if SPI_MASTER
 
@@ -955,15 +918,20 @@ config SPI_RZV2H_RSPI
 config SPI_RZV2M_CSI
 	tristate "Renesas RZ/V2M CSI controller"
 	depends on ARCH_RENESAS || COMPILE_TEST
-	help
-	  SPI driver for Renesas RZ/V2M Clocked Serial Interface (CSI).
-	  CSI supports both SPI host and SPI target roles.
+comment "SPI Master Controller Drivers"
 
-config SPI_QCOM_QSPI
-	tristate "QTI QSPI controller"
-	depends on ARCH_QCOM || COMPILE_TEST
+config Q2SPI_MSM_GENI
+	tristate "Qualcomm Technologies Inc.'s GENI based Q2SPI controller"
+	depends on QCOM_GENI_SE
+	depends on MSM_GPI_DMA
 	help
-	  QSPI(Quad SPI) driver for Qualcomm QSPI controller.
+	  This driver supports GENI serial engine based Q2SPI controller in
+	  master mode on the Qualcomm Technologies Inc.'s SoCs. If you say
+	  yes to this option, support will be included for the built-in Q2SPI
+	  interface on the Qualcomm Technologies Inc.'s SoCs.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called q2spi-geni.
 
 config SPI_QPIC_SNAND
 	tristate "QPIC SNAND controller"
@@ -977,15 +945,17 @@ config SPI_QPIC_SNAND
 config SPI_QUP
 	tristate "Qualcomm SPI controller with QUP interface"
 	depends on ARCH_QCOM || COMPILE_TEST
+config SPI_MSM_GENI
+	tristate "Qualcomm Technologies Inc.'s GENI based SPI controller"
+	depends on QCOM_GENI_SE
 	help
-	  Qualcomm Universal Peripheral (QUP) core is an AHB slave that
-	  provides a common data path (an output FIFO and an input FIFO)
-	  for serial peripheral interface (SPI) mini-core. SPI in master
-	  mode supports up to 50MHz, up to four chip selects, programmable
-	  data path from 4 bits to 32 bits and numerous protocol variants.
+	  This driver supports GENI serial engine based SPI controller in
+	  master mode on the Qualcomm Technologies Inc.'s SoCs. If you say
+	  yes to this option, support will be included for the built-in SPI
+	  interface on the Qualcomm Technologies Inc.'s SoCs.
 
 	  This driver can also be built as a module.  If so, the module
-	  will be called spi_qup.
+	  will be called spi-msm-geni.
 
 config SPI_QCOM_GENI
 	tristate "Qualcomm GENI based SPI controller"
@@ -1355,10 +1325,17 @@ config SPI_TLE62X0
 	  such as the TLE6220, TLE6230 and TLE6240.  This provides a
 	  sysfs interface, with each line presented as a kind of GPIO
 	  exposing both switch control and diagnostic feedback.
+config SPI_QCOM_GENI_MSM
+	tristate "Qualcomm Technologies Inc.'s GENI based SPI controller with SCMI"
+	depends on QCOM_GENI_SE_MSM
+	help
+	  This driver supports GENI serial engine based SPI controller in
+	  master mode on the Qualcomm Technologies Inc.'s SoCs. If you say
+	  yes to this option, support will be included for the built-in SPI
+	  interface on the Qualcomm Technologies Inc.'s SoCs.
 
-#
-# Add new SPI protocol masters in alphabetical order above this line
-#
+	  This driver can also be built as a module.  If so, the module
+	  will be called spi-geni-qcom-msm.
 
 endif # SPI_MASTER
 

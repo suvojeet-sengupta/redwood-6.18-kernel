@@ -5,79 +5,71 @@
  * Copyright (c) 2013-2019, The Linux Foundation. All rights reserved.
  * Copyright (c) 2019, Google LLC
  * Copyright (c) 2023, Linaro Limited
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/bitfield.h>
-#include <linux/cleanup.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
-#include <linux/device.h>
 #include <linux/iopoll.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
+#if IS_ENABLED(CONFIG_QTI_HW_KEY_MANAGER_V1)
+#include "hwkm_v1.h"
+#endif
 
 #include <linux/firmware/qcom/qcom_scm.h>
 
 #include <soc/qcom/ice.h>
+#include <linux/qtee_shmbridge.h>
 
-#define AES_256_XTS_KEY_SIZE			64   /* for raw keys only */
-#define QCOM_ICE_HWKM_WRAPPED_KEY_SIZE		100  /* assuming HWKM v2 */
+#define AES_256_XTS_KEY_SIZE			64
+
+/*
+ * Wrapped key sizes from HWKm is different for different versions of
+ * HW. It is not expected to change again in the future.
+ */
+#define QCOM_ICE_HWKM_WRAPPED_KEY_SIZE(v)	\
+	((v) == 1 ? 68 : 100)
 
 /* QCOM ICE registers */
-
-#define QCOM_ICE_REG_CONTROL			0x0000
-#define QCOM_ICE_LEGACY_MODE_ENABLED		BIT(0)
-
 #define QCOM_ICE_REG_VERSION			0x0008
-
 #define QCOM_ICE_REG_FUSE_SETTING		0x0010
-#define QCOM_ICE_FUSE_SETTING_MASK		BIT(0)
-#define QCOM_ICE_FORCE_HW_KEY0_SETTING_MASK	BIT(1)
-#define QCOM_ICE_FORCE_HW_KEY1_SETTING_MASK	BIT(2)
-
 #define QCOM_ICE_REG_BIST_STATUS		0x0070
+#define QCOM_ICE_REG_ADVANCED_CONTROL		0x1000
+#define QCOM_ICE_REG_CONTROL			0x0
+#define QCOM_ICE_LUT_KEYS_CRYPTOCFG_R16		0x4040
+
+/* QCOM ICE HWKM registers */
+#define QTI_HWKM_ICE_RG_IPCAT_VERSION			0x0000
+#define QCOM_ICE_REG_HWKM_TZ_KM_CTL			0x1000
+#define QCOM_ICE_REG_HWKM_TZ_KM_STATUS			0x1004
+#define QCOM_ICE_REG_HWKM_BANK0_BANKN_IRQ_STATUS	0x2008
+#define QCOM_ICE_REG_HWKM_BANK0_BBAC_0			0x5000
+#define QCOM_ICE_REG_HWKM_BANK0_BBAC_1			0x5004
+#define QCOM_ICE_REG_HWKM_BANK0_BBAC_2			0x5008
+#define QCOM_ICE_REG_HWKM_BANK0_BBAC_3			0x500C
+#define QCOM_ICE_REG_HWKM_BANK0_BBAC_4			0x5010
+
+/* QCOM ICE HWKM BIST vals */
+#define QCOM_ICE_HWKM_BIST_DONE_V1_VAL		0x14007
+#define QCOM_ICE_HWKM_BIST_DONE_V2_VAL		0x287
+
+/* QCOM ICE HWKM version*/
+#define QCOM_ICE_HWKM_V2_0_0			0x02000000
+#define QCOM_ICE_HWKM_V2_1_0			0x02010000
+/* BIST ("built-in self-test") status flags */
 #define QCOM_ICE_BIST_STATUS_MASK		GENMASK(31, 28)
 
-#define QCOM_ICE_REG_ADVANCED_CONTROL		0x1000
+#define QCOM_ICE_FUSE_SETTING_MASK		0x1
+#define QCOM_ICE_FORCE_HW_KEY0_SETTING_MASK	0x2
+#define QCOM_ICE_FORCE_HW_KEY1_SETTING_MASK	0x4
 
-#define QCOM_ICE_REG_CRYPTOCFG_BASE		0x4040
-#define QCOM_ICE_REG_CRYPTOCFG_SIZE		0x80
-#define QCOM_ICE_REG_CRYPTOCFG(slot) (QCOM_ICE_REG_CRYPTOCFG_BASE + \
-				      QCOM_ICE_REG_CRYPTOCFG_SIZE * (slot))
-union crypto_cfg {
-	__le32 regval;
-	struct {
-		u8 dusize;
-		u8 capidx;
-		u8 reserved;
-#define QCOM_ICE_HWKM_CFG_ENABLE_VAL		BIT(7)
-		u8 cfge;
-	};
-};
+#define QCOM_ICE_LUT_KEYS_CRYPTOCFG_OFFSET	0x80
 
-/* QCOM ICE HWKM (Hardware Key Manager) registers */
-
-#define HWKM_OFFSET				0x8000
-
-#define QCOM_ICE_REG_HWKM_TZ_KM_CTL		(HWKM_OFFSET + 0x1000)
-#define QCOM_ICE_HWKM_DISABLE_CRC_CHECKS_VAL	(BIT(1) | BIT(2))
-
-#define QCOM_ICE_REG_HWKM_TZ_KM_STATUS		(HWKM_OFFSET + 0x1004)
-#define QCOM_ICE_HWKM_KT_CLEAR_DONE		BIT(0)
-#define QCOM_ICE_HWKM_BOOT_CMD_LIST0_DONE	BIT(1)
-#define QCOM_ICE_HWKM_BOOT_CMD_LIST1_DONE	BIT(2)
-#define QCOM_ICE_HWKM_CRYPTO_BIST_DONE_V2	BIT(7)
-#define QCOM_ICE_HWKM_BIST_DONE_V2		BIT(9)
-
-#define QCOM_ICE_REG_HWKM_BANK0_BANKN_IRQ_STATUS (HWKM_OFFSET + 0x2008)
-#define QCOM_ICE_HWKM_RSP_FIFO_CLEAR_VAL	BIT(3)
-
-#define QCOM_ICE_REG_HWKM_BANK0_BBAC_0		(HWKM_OFFSET + 0x5000)
-#define QCOM_ICE_REG_HWKM_BANK0_BBAC_1		(HWKM_OFFSET + 0x5004)
-#define QCOM_ICE_REG_HWKM_BANK0_BBAC_2		(HWKM_OFFSET + 0x5008)
-#define QCOM_ICE_REG_HWKM_BANK0_BBAC_3		(HWKM_OFFSET + 0x500C)
-#define QCOM_ICE_REG_HWKM_BANK0_BBAC_4		(HWKM_OFFSET + 0x5010)
+#define QCOM_ICE_HWKM_REG_OFFSET	0x8000
+#define HWKM_OFFSET(reg)		((reg) + QCOM_ICE_HWKM_REG_OFFSET)
 
 #define qcom_ice_writel(engine, val, reg)	\
 	writel((val), (engine)->base + (reg))
@@ -85,18 +77,26 @@ union crypto_cfg {
 #define qcom_ice_readl(engine, reg)	\
 	readl((engine)->base + (reg))
 
-static bool qcom_ice_use_wrapped_keys;
-module_param_named(use_wrapped_keys, qcom_ice_use_wrapped_keys, bool, 0660);
-MODULE_PARM_DESC(use_wrapped_keys,
-		 "Support wrapped keys instead of raw keys, if available on the platform");
-
 struct qcom_ice {
 	struct device *dev;
 	void __iomem *base;
+	struct device_link *link;
 
 	struct clk *core_clk;
+	u8 hwkm_version;
 	bool use_hwkm;
 	bool hwkm_init_complete;
+	bool handle_clks;
+};
+
+union crypto_cfg {
+	__le32 regval;
+	struct {
+		u8 dusize;
+		u8 capidx;
+		u8 reserved;
+		u8 cfge;
+	};
 };
 
 static bool qcom_ice_check_supported(struct qcom_ice *ice)
@@ -114,8 +114,26 @@ static bool qcom_ice_check_supported(struct qcom_ice *ice)
 		return false;
 	}
 
+	if (major >= 4 || (major == 3 && minor == 2 && step >= 1))
+		ice->hwkm_version = 2;
+	else if (major == 3 && minor == 2)
+		ice->hwkm_version = 1;
+	else
+		ice->hwkm_version = 0;
+
+	if (ice->hwkm_version == 0)
+		ice->use_hwkm = false;
+
 	dev_info(dev, "Found QC Inline Crypto Engine (ICE) v%d.%d.%d\n",
 		 major, minor, step);
+	if (!ice->hwkm_version)
+		dev_dbg(dev, "QC ICE HWKM (Hardware Key Manager) not supported\n");
+	else
+		dev_dbg(dev, "QC ICE HWKM (Hardware Key Manager) version = %d\n",
+			 ice->hwkm_version);
+
+	if (!ice->use_hwkm)
+		dev_dbg(dev, "QC ICE HWKM (Hardware Key Manager) not used");
 
 	/* If fuses are blown, ICE might not work in the standard way. */
 	regval = qcom_ice_readl(ice, QCOM_ICE_REG_FUSE_SETTING);
@@ -126,35 +144,6 @@ static bool qcom_ice_check_supported(struct qcom_ice *ice)
 		return false;
 	}
 
-	/*
-	 * Check for HWKM support and decide whether to use it or not.  ICE
-	 * v3.2.1 and later have HWKM v2.  ICE v3.2.0 has HWKM v1.  Earlier ICE
-	 * versions don't have HWKM at all.  However, for HWKM to be fully
-	 * usable by Linux, the TrustZone software also needs to support certain
-	 * SCM calls including the ones to generate and prepare keys.  That
-	 * effectively makes the earliest supported SoC be SM8650, which has
-	 * HWKM v2.  Therefore, this driver doesn't include support for HWKM v1,
-	 * and it checks for the SCM call support before it decides to use HWKM.
-	 *
-	 * Also, since HWKM and legacy mode are mutually exclusive, and
-	 * ICE-capable storage driver(s) need to know early on whether to
-	 * advertise support for raw keys or wrapped keys, HWKM cannot be used
-	 * unconditionally.  A module parameter is used to opt into using it.
-	 */
-	if ((major >= 4 ||
-	     (major == 3 && (minor >= 3 || (minor == 2 && step >= 1)))) &&
-	    qcom_scm_has_wrapped_key_support()) {
-		if (qcom_ice_use_wrapped_keys) {
-			dev_info(dev, "Using HWKM. Supporting wrapped keys only.\n");
-			ice->use_hwkm = true;
-		} else {
-			dev_info(dev, "Not using HWKM. Supporting raw keys only.\n");
-		}
-	} else if (qcom_ice_use_wrapped_keys) {
-		dev_warn(dev, "A supported HWKM is not present. Ignoring qcom_ice.use_wrapped_keys=1.\n");
-	} else {
-		dev_info(dev, "A supported HWKM is not present. Supporting raw keys only.\n");
-	}
 	return true;
 }
 
@@ -193,81 +182,114 @@ static void qcom_ice_optimization_enable(struct qcom_ice *ice)
  * fails, so we needn't do it in software too, and (c) properly testing
  * storage encryption requires testing the full storage stack anyway,
  * and not relying on hardware-level self-tests.
+ *
+ * However, we still care about if HWKM BIST failed (when supported) as
+ * important functionality would fail later, so disable hwkm on failure.
  */
 static int qcom_ice_wait_bist_status(struct qcom_ice *ice)
 {
 	u32 regval;
+	u32 bist_done_val;
 	int err;
 
 	err = readl_poll_timeout(ice->base + QCOM_ICE_REG_BIST_STATUS,
 				 regval, !(regval & QCOM_ICE_BIST_STATUS_MASK),
 				 50, 5000);
-	if (err) {
+	if (err)
 		dev_err(ice->dev, "Timed out waiting for ICE self-test to complete\n");
-		return err;
+
+	if (ice->use_hwkm) {
+		bist_done_val = (ice->hwkm_version == 1) ?
+				 QCOM_ICE_HWKM_BIST_DONE_V1_VAL :
+				 QCOM_ICE_HWKM_BIST_DONE_V2_VAL;
+		if (qcom_ice_readl(ice,
+				   HWKM_OFFSET(QCOM_ICE_REG_HWKM_TZ_KM_STATUS)) !=
+				   bist_done_val) {
+			dev_warn(ice->dev, "HWKM BIST error\n");
+			ice->use_hwkm = false;
+		}
 	}
 
-	if (ice->use_hwkm &&
-	    qcom_ice_readl(ice, QCOM_ICE_REG_HWKM_TZ_KM_STATUS) !=
-	    (QCOM_ICE_HWKM_KT_CLEAR_DONE |
-	     QCOM_ICE_HWKM_BOOT_CMD_LIST0_DONE |
-	     QCOM_ICE_HWKM_BOOT_CMD_LIST1_DONE |
-	     QCOM_ICE_HWKM_CRYPTO_BIST_DONE_V2 |
-	     QCOM_ICE_HWKM_BIST_DONE_V2)) {
-		dev_err(ice->dev, "HWKM self-test error!\n");
-		/*
-		 * Too late to revoke use_hwkm here, as it was already
-		 * propagated up the stack into the crypto capabilities.
-		 */
-	}
-	return 0;
+	return err;
 }
 
-static void qcom_ice_hwkm_init(struct qcom_ice *ice)
+static void qcom_ice_enable_standard_mode(struct qcom_ice *ice)
 {
-	u32 regval;
+	u32 val = 0;
 
 	if (!ice->use_hwkm)
 		return;
 
-	BUILD_BUG_ON(QCOM_ICE_HWKM_WRAPPED_KEY_SIZE >
-		     BLK_CRYPTO_MAX_HW_WRAPPED_KEY_SIZE);
 	/*
-	 * When ICE is in HWKM mode, it only supports wrapped keys.
-	 * When ICE is in legacy mode, it only supports raw keys.
+	 * When ICE is in standard (hwkm) mode, it supports HW wrapped
+	 * keys, and when it is in legacy mode, it only supports standard
+	 * (non HW wrapped) keys.
 	 *
-	 * Put ICE in HWKM mode.  ICE defaults to legacy mode.
+	 * Put ICE in standard mode, ICE defaults to legacy mode.
+	 * Legacy mode - ICE HWKM slave not supported.
+	 * Standard mode - ICE HWKM slave supported.
+	 *
+	 * Depending on the version of HWKM, it is controlled by different
+	 * registers in ICE.
 	 */
-	regval = qcom_ice_readl(ice, QCOM_ICE_REG_CONTROL);
-	regval &= ~QCOM_ICE_LEGACY_MODE_ENABLED;
-	qcom_ice_writel(ice, regval, QCOM_ICE_REG_CONTROL);
+	if (ice->hwkm_version >= 2) {
+		val = qcom_ice_readl(ice, QCOM_ICE_REG_CONTROL);
+		val = val & 0xFFFFFFFE;
+		qcom_ice_writel(ice, val, QCOM_ICE_REG_CONTROL);
+	} else {
+		qcom_ice_writel(ice, 0x7,
+				HWKM_OFFSET(QCOM_ICE_REG_HWKM_TZ_KM_CTL));
+	}
+}
 
-	/* Disable CRC checks.  This HWKM feature is not used. */
-	qcom_ice_writel(ice, QCOM_ICE_HWKM_DISABLE_CRC_CHECKS_VAL,
-			QCOM_ICE_REG_HWKM_TZ_KM_CTL);
+static void qcom_ice_hwkm_init(struct qcom_ice *ice)
+{
+	if (!ice->use_hwkm)
+		return;
+
+	/* Disable CRC checks. This HWKM feature is not used. */
+	qcom_ice_writel(ice, 0x6,
+			HWKM_OFFSET(QCOM_ICE_REG_HWKM_TZ_KM_CTL));
 
 	/*
-	 * Allow the HWKM slave to read and write the keyslots in the ICE HWKM
-	 * slave.  Without this, TrustZone cannot program keys into ICE.
+	 * Give register bank of the HWKM slave access to read and modify
+	 * the keyslots in ICE HWKM slave. Without this, trustzone will not
+	 * be able to program keys into ICE.
 	 */
-	qcom_ice_writel(ice, GENMASK(31, 0), QCOM_ICE_REG_HWKM_BANK0_BBAC_0);
-	qcom_ice_writel(ice, GENMASK(31, 0), QCOM_ICE_REG_HWKM_BANK0_BBAC_1);
-	qcom_ice_writel(ice, GENMASK(31, 0), QCOM_ICE_REG_HWKM_BANK0_BBAC_2);
-	qcom_ice_writel(ice, GENMASK(31, 0), QCOM_ICE_REG_HWKM_BANK0_BBAC_3);
-	qcom_ice_writel(ice, GENMASK(31, 0), QCOM_ICE_REG_HWKM_BANK0_BBAC_4);
+	qcom_ice_writel(ice, 0xFFFFFFFF,
+			HWKM_OFFSET(QCOM_ICE_REG_HWKM_BANK0_BBAC_0));
+	qcom_ice_writel(ice, 0xFFFFFFFF,
+			HWKM_OFFSET(QCOM_ICE_REG_HWKM_BANK0_BBAC_1));
+	qcom_ice_writel(ice, 0xFFFFFFFF,
+			HWKM_OFFSET(QCOM_ICE_REG_HWKM_BANK0_BBAC_2));
+	qcom_ice_writel(ice, 0xFFFFFFFF,
+			HWKM_OFFSET(QCOM_ICE_REG_HWKM_BANK0_BBAC_3));
+	qcom_ice_writel(ice, 0xFFFFFFFF,
+			HWKM_OFFSET(QCOM_ICE_REG_HWKM_BANK0_BBAC_4));
 
-	/* Clear the HWKM response FIFO. */
-	qcom_ice_writel(ice, QCOM_ICE_HWKM_RSP_FIFO_CLEAR_VAL,
-			QCOM_ICE_REG_HWKM_BANK0_BANKN_IRQ_STATUS);
+	/* Clear HWKM response FIFO before doing anything */
+	qcom_ice_writel(ice, 0x8,
+			HWKM_OFFSET(QCOM_ICE_REG_HWKM_BANK0_BANKN_IRQ_STATUS));
+
 	ice->hwkm_init_complete = true;
 }
 
 int qcom_ice_enable(struct qcom_ice *ice)
 {
+	int err;
+
 	qcom_ice_low_power_mode_enable(ice);
 	qcom_ice_optimization_enable(ice);
+
+	qcom_ice_enable_standard_mode(ice);
+
+	err = qcom_ice_wait_bist_status(ice);
+	if (err)
+		return err;
+
 	qcom_ice_hwkm_init(ice);
-	return qcom_ice_wait_bist_status(ice);
+
+	return err;
 }
 EXPORT_SYMBOL_GPL(qcom_ice_enable);
 
@@ -276,12 +298,16 @@ int qcom_ice_resume(struct qcom_ice *ice)
 	struct device *dev = ice->dev;
 	int err;
 
-	err = clk_prepare_enable(ice->core_clk);
-	if (err) {
-		dev_err(dev, "failed to enable core clock (%d)\n",
-			err);
-		return err;
+	if (ice->handle_clks) {
+		err = clk_prepare_enable(ice->core_clk);
+		if (err) {
+			dev_err(dev, "failed to enable core clock (%d)\n",
+				err);
+			return err;
+		}
 	}
+
+	qcom_ice_enable_standard_mode(ice);
 	qcom_ice_hwkm_init(ice);
 	return qcom_ice_wait_bist_status(ice);
 }
@@ -289,59 +315,137 @@ EXPORT_SYMBOL_GPL(qcom_ice_resume);
 
 int qcom_ice_suspend(struct qcom_ice *ice)
 {
-	clk_disable_unprepare(ice->core_clk);
-	ice->hwkm_init_complete = false;
+	if (ice->handle_clks)
+		clk_disable_unprepare(ice->core_clk);
 
 	return 0;
 }
 EXPORT_SYMBOL_GPL(qcom_ice_suspend);
 
-static unsigned int translate_hwkm_slot(struct qcom_ice *ice, unsigned int slot)
+/*
+ * HW dictates the internal mapping between the ICE and HWKM slots,
+ * which are different for different versions, make the translation
+ * here. For v1 however, the translation is done in trustzone.
+ */
+static int translate_hwkm_slot(struct qcom_ice *ice, int slot)
 {
-	return slot * 2;
+	if (!ice->use_hwkm)
+		return slot;
+
+	int offset = 0;
+	u32 hwkm_version = 0;
+
+	if (ice->hwkm_init_complete) {
+		hwkm_version = qcom_ice_readl(ice, HWKM_OFFSET(QTI_HWKM_ICE_RG_IPCAT_VERSION));
+		if (hwkm_version >= QCOM_ICE_HWKM_V2_0_0 && hwkm_version < QCOM_ICE_HWKM_V2_1_0)
+			offset = 10;
+	}
+	return (ice->hwkm_version == 1) ? slot : ((slot * 2) + offset);
 }
 
-static int qcom_ice_program_wrapped_key(struct qcom_ice *ice, unsigned int slot,
-					const struct blk_crypto_key *bkey)
+#if IS_ENABLED(CONFIG_SCSI_UFS_CRYPTO_QTI) || IS_ENABLED(CONFIG_MMC_CRYPTO_QTI)
+static int qcom_ice_program_wrapped_key(struct qcom_ice *ice,
+					const struct blk_crypto_key *key,
+					u8 data_unit_size, int slot)
 {
-	struct device *dev = ice->dev;
-	union crypto_cfg cfg = {
-		.dusize = bkey->crypto_cfg.data_unit_size / 512,
-		.capidx = QCOM_SCM_ICE_CIPHER_AES_256_XTS,
-		.cfge = QCOM_ICE_HWKM_CFG_ENABLE_VAL,
-	};
+	int hwkm_slot;
 	int err;
+	union crypto_cfg cfg;
+	struct qtee_shm shm;
+
+	hwkm_slot = translate_hwkm_slot(ice, slot);
+
+#if IS_ENABLED(CONFIG_QTI_HW_KEY_MANAGER_V1)
+	err = qcom_hwkm_program_key(ice->base, key, hwkm_slot,
+				data_unit_size, QCOM_SCM_ICE_CIPHER_AES_256_XTS);
+	if (err) {
+		pr_err("%s: program key failed with error %d\n", __func__, err);
+		err = qcom_hwkm_invalidate_key(slot);
+		if (err)
+			pr_err("%s: invalidate key failed with error %d\n", __func__, err);
+	}
+
+	return err;
+#endif
+
+	memset(&cfg, 0, sizeof(cfg));
+	cfg.dusize = data_unit_size;
+	cfg.capidx = QCOM_SCM_ICE_CIPHER_AES_256_XTS;
+	cfg.cfge = 0x80;
+
+	/* Clear CFGE */
+	qcom_ice_writel(ice, 0x0, QCOM_ICE_LUT_KEYS_CRYPTOCFG_R16 +
+				  QCOM_ICE_LUT_KEYS_CRYPTOCFG_OFFSET * slot);
+
+	/*
+	 * The following logic for shmbridge will be taken care in SCM driver
+	 * in upstream. For now, handle it in the ICE driver downstream until
+	 * wrapped key upstream effort is complete.
+	 */
+	err = qtee_shmbridge_allocate_shm(key->size, &shm);
+	if (err)
+		return -ENOMEM;
+
+	memcpy(shm.vaddr, key->raw, key->size);
+	qtee_shmbridge_flush_shm_buf(&shm);
 
 	if (!ice->use_hwkm) {
-		dev_err_ratelimited(dev, "Got wrapped key when not using HWKM\n");
-		return -EINVAL;
+		err = qcom_scm_config_set_ice_key(hwkm_slot, shm.paddr, key->size,
+			QCOM_SCM_ICE_CIPHER_AES_256_XTS, data_unit_size, 0);
+	} else {
+		/* Call trustzone to program the wrapped key using hwkm */
+		err = qcom_scm_config_set_ice_key(hwkm_slot, shm.paddr, key->size,
+					  0, 0, 0);
 	}
-	if (!ice->hwkm_init_complete) {
-		dev_err_ratelimited(dev, "HWKM not yet initialized\n");
-		return -EINVAL;
-	}
-
-	/* Clear CFGE before programming the key. */
-	qcom_ice_writel(ice, 0x0, QCOM_ICE_REG_CRYPTOCFG(slot));
-
-	/* Call into TrustZone to program the wrapped key using HWKM. */
-	err = qcom_scm_ice_set_key(translate_hwkm_slot(ice, slot), bkey->bytes,
-				   bkey->size, cfg.capidx, cfg.dusize);
 	if (err) {
-		dev_err_ratelimited(dev,
-				    "qcom_scm_ice_set_key failed; err=%d, slot=%u\n",
-				    err, slot);
-		return err;
+		pr_err("%s:SCM call Error: 0x%x slot %d\n", __func__, err,
+		       slot);
+		goto free_shm;
 	}
 
-	/* Set CFGE after programming the key. */
-	qcom_ice_writel(ice, le32_to_cpu(cfg.regval),
-			QCOM_ICE_REG_CRYPTOCFG(slot));
-	return 0;
+	/* Enable CFGE after programming key */
+	qcom_ice_writel(ice, cfg.regval, QCOM_ICE_LUT_KEYS_CRYPTOCFG_R16 +
+					 QCOM_ICE_LUT_KEYS_CRYPTOCFG_OFFSET * slot);
+
+free_shm:
+	qtee_shmbridge_inv_shm_buf(&shm);
+	qtee_shmbridge_free_shm(&shm);
+	return err;
 }
 
-int qcom_ice_program_key(struct qcom_ice *ice, unsigned int slot,
-			 const struct blk_crypto_key *blk_key)
+int qcom_ice_program_key_hwkm(struct qcom_ice *ice,
+			      u8 algorithm_id, u8 key_size,
+			      const struct blk_crypto_key *bkey,
+			      u8 data_unit_size, int slot)
+{
+	struct device *dev = ice->dev;
+	int err = 0;
+
+	/* Only AES-256-XTS has been tested so far. */
+	if (algorithm_id != QCOM_ICE_CRYPTO_ALG_AES_XTS ||
+	    (key_size != QCOM_ICE_CRYPTO_KEY_SIZE_256 &&
+	    key_size != QCOM_ICE_CRYPTO_KEY_SIZE_WRAPPED)) {
+		dev_err_ratelimited(dev,
+				    "Unhandled crypto capability; algorithm_id=%d, key_size=%d\n",
+				    algorithm_id, key_size);
+		return -EINVAL;
+	}
+
+	if (bkey->crypto_cfg.key_type == BLK_CRYPTO_KEY_TYPE_HW_WRAPPED) {
+		err = qcom_ice_program_wrapped_key(ice, bkey, data_unit_size,
+						   slot);
+	}
+
+	return err;
+}
+EXPORT_SYMBOL_GPL(qcom_ice_program_key_hwkm);
+
+#endif
+
+int qcom_ice_program_key(struct qcom_ice *ice,
+			 u8 algorithm_id, u8 key_size,
+			 const u8 crypto_key[], u8 data_unit_size,
+			 int slot)
 {
 	struct device *dev = ice->dev;
 	union {
@@ -352,26 +456,15 @@ int qcom_ice_program_key(struct qcom_ice *ice, unsigned int slot,
 	int err;
 
 	/* Only AES-256-XTS has been tested so far. */
-	if (blk_key->crypto_cfg.crypto_mode !=
-	    BLK_ENCRYPTION_MODE_AES_256_XTS) {
-		dev_err_ratelimited(dev, "Unsupported crypto mode: %d\n",
-				    blk_key->crypto_cfg.crypto_mode);
+	if (algorithm_id != QCOM_ICE_CRYPTO_ALG_AES_XTS ||
+	    key_size != QCOM_ICE_CRYPTO_KEY_SIZE_256) {
+		dev_err_ratelimited(dev,
+				    "Unhandled crypto capability; algorithm_id=%d, key_size=%d\n",
+				    algorithm_id, key_size);
 		return -EINVAL;
 	}
 
-	if (blk_key->crypto_cfg.key_type == BLK_CRYPTO_KEY_TYPE_HW_WRAPPED)
-		return qcom_ice_program_wrapped_key(ice, slot, blk_key);
-
-	if (ice->use_hwkm) {
-		dev_err_ratelimited(dev, "Got raw key when using HWKM\n");
-		return -EINVAL;
-	}
-
-	if (blk_key->size != AES_256_XTS_KEY_SIZE) {
-		dev_err_ratelimited(dev, "Incorrect key size\n");
-		return -EINVAL;
-	}
-	memcpy(key.bytes, blk_key->bytes, AES_256_XTS_KEY_SIZE);
+	memcpy(key.bytes, crypto_key, AES_256_XTS_KEY_SIZE);
 
 	/* The SCM call requires that the key words are encoded in big endian */
 	for (i = 0; i < ARRAY_SIZE(key.words); i++)
@@ -379,7 +472,7 @@ int qcom_ice_program_key(struct qcom_ice *ice, unsigned int slot,
 
 	err = qcom_scm_ice_set_key(slot, key.bytes, AES_256_XTS_KEY_SIZE,
 				   QCOM_SCM_ICE_CIPHER_AES_256_XTS,
-				   blk_key->crypto_cfg.data_unit_size / 512);
+				   data_unit_size);
 
 	memzero_explicit(&key, sizeof(key));
 
@@ -389,130 +482,82 @@ EXPORT_SYMBOL_GPL(qcom_ice_program_key);
 
 int qcom_ice_evict_key(struct qcom_ice *ice, int slot)
 {
-	if (ice->hwkm_init_complete)
-		slot = translate_hwkm_slot(ice, slot);
-	return qcom_scm_ice_invalidate_key(slot);
+	int hwkm_slot = slot;
+
+#if IS_ENABLED(CONFIG_QTI_HW_KEY_MANAGER_V1)
+	return qcom_hwkm_invalidate_key(slot);
+#endif
+
+	if (ice->use_hwkm) {
+		hwkm_slot = translate_hwkm_slot(ice, slot);
+	/*
+	 * Ignore calls to evict key when HWKM is supported and hwkm init
+	 * is not yet done. This is to avoid the clearing all slots call
+	 * during a storage reset when ICE is still in legacy mode. HWKM slave
+	 * in ICE takes care of zeroing out the keytable on reset.
+	 */
+		if (!ice->hwkm_init_complete)
+			return 0;
+	}
+
+	return qcom_scm_clear_ice_key(hwkm_slot, 0);
 }
 EXPORT_SYMBOL_GPL(qcom_ice_evict_key);
 
-/**
- * qcom_ice_get_supported_key_type() - Get the supported key type
- * @ice: ICE driver data
- *
- * Return: the blk-crypto key type that the ICE driver is configured to use.
- * This is the key type that ICE-capable storage drivers should advertise as
- * supported in the crypto capabilities of any disks they register.
- */
-enum blk_crypto_key_type qcom_ice_get_supported_key_type(struct qcom_ice *ice)
+bool qcom_ice_hwkm_supported(struct qcom_ice *ice)
 {
-	if (ice->use_hwkm)
-		return BLK_CRYPTO_KEY_TYPE_HW_WRAPPED;
-	return BLK_CRYPTO_KEY_TYPE_RAW;
+	return ice->use_hwkm;
 }
-EXPORT_SYMBOL_GPL(qcom_ice_get_supported_key_type);
+EXPORT_SYMBOL_GPL(qcom_ice_hwkm_supported);
 
-/**
- * qcom_ice_derive_sw_secret() - Derive software secret from wrapped key
- * @ice: ICE driver data
- * @eph_key: an ephemerally-wrapped key
- * @eph_key_size: size of @eph_key in bytes
- * @sw_secret: output buffer for the software secret
- *
- * Use HWKM to derive the "software secret" from a hardware-wrapped key that is
- * given in ephemerally-wrapped form.
- *
- * Return: 0 on success; -EBADMSG if the given ephemerally-wrapped key is
- *	   invalid; or another -errno value.
- */
-int qcom_ice_derive_sw_secret(struct qcom_ice *ice,
-			      const u8 *eph_key, size_t eph_key_size,
+int qcom_ice_derive_sw_secret(struct qcom_ice *ice, const u8 wkey[],
+			      unsigned int wkey_size,
 			      u8 sw_secret[BLK_CRYPTO_SW_SECRET_SIZE])
 {
-	int err = qcom_scm_derive_sw_secret(eph_key, eph_key_size,
-					    sw_secret,
-					    BLK_CRYPTO_SW_SECRET_SIZE);
-	if (err == -EIO || err == -EINVAL)
-		err = -EBADMSG; /* probably invalid key */
+	int err = 0;
+	struct qtee_shm shm_key, shm_secret;
+
+#if IS_ENABLED(CONFIG_QTI_HW_KEY_MANAGER_V1)
+	return qcom_hwkm_derive_raw_secret_platform(wkey,
+				wkey_size, sw_secret, BLK_CRYPTO_SW_SECRET_SIZE);
+#endif
+
+	/*
+	 * The following logic for shmbridge will be taken care in SCM driver
+	 * in upstream. For now, handle it in the ICE driver downstream until
+	 * wrapped key upstream effort is complete.
+	 */
+	err = qtee_shmbridge_allocate_shm(wkey_size, &shm_key);
+	if (err)
+		return -ENOMEM;
+
+	err = qtee_shmbridge_allocate_shm(BLK_CRYPTO_SW_SECRET_SIZE, &shm_secret);
+	if (err)
+		goto free_key;
+
+	memcpy(shm_key.vaddr, wkey, wkey_size);
+	qtee_shmbridge_flush_shm_buf(&shm_key);
+
+	memset(shm_secret.vaddr, 0, BLK_CRYPTO_SW_SECRET_SIZE);
+	qtee_shmbridge_flush_shm_buf(&shm_secret);
+
+	err = qcom_scm_derive_sw_secret(shm_key.paddr, wkey_size,
+					shm_secret.paddr, BLK_CRYPTO_SW_SECRET_SIZE);
+
+	qtee_shmbridge_inv_shm_buf(&shm_secret);
+	qtee_shmbridge_inv_shm_buf(&shm_key);
+
+	if (err)
+		pr_err("%s:SCM call error for raw secret: 0x%x\n", __func__, err);
+	else
+		memcpy(sw_secret, shm_secret.vaddr, BLK_CRYPTO_SW_SECRET_SIZE);
+
+	qtee_shmbridge_free_shm(&shm_secret);
+free_key:
+	qtee_shmbridge_free_shm(&shm_key);
 	return err;
 }
 EXPORT_SYMBOL_GPL(qcom_ice_derive_sw_secret);
-
-/**
- * qcom_ice_generate_key() - Generate a wrapped key for inline encryption
- * @ice: ICE driver data
- * @lt_key: output buffer for the long-term wrapped key
- *
- * Use HWKM to generate a new key and return it as a long-term wrapped key.
- *
- * Return: the size of the resulting wrapped key on success; -errno on failure.
- */
-int qcom_ice_generate_key(struct qcom_ice *ice,
-			  u8 lt_key[BLK_CRYPTO_MAX_HW_WRAPPED_KEY_SIZE])
-{
-	int err;
-
-	err = qcom_scm_generate_ice_key(lt_key, QCOM_ICE_HWKM_WRAPPED_KEY_SIZE);
-	if (err)
-		return err;
-
-	return QCOM_ICE_HWKM_WRAPPED_KEY_SIZE;
-}
-EXPORT_SYMBOL_GPL(qcom_ice_generate_key);
-
-/**
- * qcom_ice_prepare_key() - Prepare a wrapped key for inline encryption
- * @ice: ICE driver data
- * @lt_key: a long-term wrapped key
- * @lt_key_size: size of @lt_key in bytes
- * @eph_key: output buffer for the ephemerally-wrapped key
- *
- * Use HWKM to re-wrap a long-term wrapped key with the per-boot ephemeral key.
- *
- * Return: the size of the resulting wrapped key on success; -EBADMSG if the
- *	   given long-term wrapped key is invalid; or another -errno value.
- */
-int qcom_ice_prepare_key(struct qcom_ice *ice,
-			 const u8 *lt_key, size_t lt_key_size,
-			 u8 eph_key[BLK_CRYPTO_MAX_HW_WRAPPED_KEY_SIZE])
-{
-	int err;
-
-	err = qcom_scm_prepare_ice_key(lt_key, lt_key_size,
-				       eph_key, QCOM_ICE_HWKM_WRAPPED_KEY_SIZE);
-	if (err == -EIO || err == -EINVAL)
-		err = -EBADMSG; /* probably invalid key */
-	if (err)
-		return err;
-
-	return QCOM_ICE_HWKM_WRAPPED_KEY_SIZE;
-}
-EXPORT_SYMBOL_GPL(qcom_ice_prepare_key);
-
-/**
- * qcom_ice_import_key() - Import a raw key for inline encryption
- * @ice: ICE driver data
- * @raw_key: the raw key to import
- * @raw_key_size: size of @raw_key in bytes
- * @lt_key: output buffer for the long-term wrapped key
- *
- * Use HWKM to import a raw key and return it as a long-term wrapped key.
- *
- * Return: the size of the resulting wrapped key on success; -errno on failure.
- */
-int qcom_ice_import_key(struct qcom_ice *ice,
-			const u8 *raw_key, size_t raw_key_size,
-			u8 lt_key[BLK_CRYPTO_MAX_HW_WRAPPED_KEY_SIZE])
-{
-	int err;
-
-	err = qcom_scm_import_ice_key(raw_key, raw_key_size,
-				      lt_key, QCOM_ICE_HWKM_WRAPPED_KEY_SIZE);
-	if (err)
-		return err;
-
-	return QCOM_ICE_HWKM_WRAPPED_KEY_SIZE;
-}
-EXPORT_SYMBOL_GPL(qcom_ice_import_key);
 
 static struct qcom_ice *qcom_ice_create(struct device *dev,
 					void __iomem *base)
@@ -534,6 +579,9 @@ static struct qcom_ice *qcom_ice_create(struct device *dev,
 	engine->dev = dev;
 	engine->base = base;
 
+	engine->handle_clks = false;
+	engine->handle_clks = of_property_read_bool(dev->of_node,
+						 "qcom,ice-handle-clks");
 	/*
 	 * Legacy DT binding uses different clk names for each consumer,
 	 * so lets try those first. If none of those are a match, it means
@@ -541,13 +589,18 @@ static struct qcom_ice *qcom_ice_create(struct device *dev,
 	 * Also, enable the clock before we check what HW version the driver
 	 * supports.
 	 */
-	engine->core_clk = devm_clk_get_optional_enabled(dev, "ice_core_clk");
-	if (!engine->core_clk)
-		engine->core_clk = devm_clk_get_optional_enabled(dev, "ice");
-	if (!engine->core_clk)
-		engine->core_clk = devm_clk_get_enabled(dev, NULL);
-	if (IS_ERR(engine->core_clk))
-		return ERR_CAST(engine->core_clk);
+	if (engine->handle_clks) {
+		engine->core_clk = devm_clk_get_optional_enabled(dev, "core_clk_ice");
+		if (!engine->core_clk)
+			engine->core_clk = devm_clk_get_optional_enabled(dev, "ice");
+		if (!engine->core_clk)
+			engine->core_clk = devm_clk_get_enabled(dev, NULL);
+		if (IS_ERR(engine->core_clk))
+			return ERR_CAST(engine->core_clk);
+	}
+
+	engine->use_hwkm = of_property_read_bool(dev->of_node,
+						 "qcom,ice-use-hwkm");
 
 	if (!qcom_ice_check_supported(engine))
 		return ERR_PTR(-EOPNOTSUPP);
@@ -570,13 +623,13 @@ static struct qcom_ice *qcom_ice_create(struct device *dev,
  * Return: ICE pointer on success, NULL if there is no ICE data provided by the
  * consumer or ERR_PTR() on error.
  */
-static struct qcom_ice *of_qcom_ice_get(struct device *dev)
+struct qcom_ice *of_qcom_ice_get(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct qcom_ice *ice;
+	struct device_node *node;
 	struct resource *res;
 	void __iomem *base;
-	struct device_link *link;
 
 	if (!dev || !dev->of_node)
 		return ERR_PTR(-ENODEV);
@@ -601,15 +654,15 @@ static struct qcom_ice *of_qcom_ice_get(struct device *dev)
 	 * (legacy DT binding), then it must at least provide a phandle
 	 * to the ICE devicetree node, otherwise ICE is not supported.
 	 */
-	struct device_node *node __free(device_node) = of_parse_phandle(dev->of_node,
-									"qcom,ice", 0);
+	node = of_parse_phandle(dev->of_node, "qcom,ice", 0);
 	if (!node)
 		return NULL;
 
 	pdev = of_find_device_by_node(node);
 	if (!pdev) {
 		dev_err(dev, "Cannot find device node %s\n", node->name);
-		return ERR_PTR(-EPROBE_DEFER);
+		ice = ERR_PTR(-EPROBE_DEFER);
+		goto out;
 	}
 
 	ice = platform_get_drvdata(pdev);
@@ -617,11 +670,12 @@ static struct qcom_ice *of_qcom_ice_get(struct device *dev)
 		dev_err(dev, "Cannot get ice instance from %s\n",
 			dev_name(&pdev->dev));
 		platform_device_put(pdev);
-		return ERR_PTR(-EPROBE_DEFER);
+		ice = ERR_PTR(-EPROBE_DEFER);
+		goto out;
 	}
 
-	link = device_link_add(dev, &pdev->dev, DL_FLAG_AUTOREMOVE_SUPPLIER);
-	if (!link) {
+	ice->link = device_link_add(dev, &pdev->dev, DL_FLAG_AUTOREMOVE_SUPPLIER);
+	if (!ice->link) {
 		dev_err(&pdev->dev,
 			"Failed to create device link to consumer %s\n",
 			dev_name(dev));
@@ -629,55 +683,12 @@ static struct qcom_ice *of_qcom_ice_get(struct device *dev)
 		ice = ERR_PTR(-EINVAL);
 	}
 
-	return ice;
-}
-
-static void qcom_ice_put(const struct qcom_ice *ice)
-{
-	struct platform_device *pdev = to_platform_device(ice->dev);
-
-	if (!platform_get_resource_byname(pdev, IORESOURCE_MEM, "ice"))
-		platform_device_put(pdev);
-}
-
-static void devm_of_qcom_ice_put(struct device *dev, void *res)
-{
-	qcom_ice_put(*(struct qcom_ice **)res);
-}
-
-/**
- * devm_of_qcom_ice_get() - Devres managed helper to get an ICE instance from
- * a DT node.
- * @dev: device pointer for the consumer device.
- *
- * This function will provide an ICE instance either by creating one for the
- * consumer device if its DT node provides the 'ice' reg range and the 'ice'
- * clock (for legacy DT style). On the other hand, if consumer provides a
- * phandle via 'qcom,ice' property to an ICE DT, the ICE instance will already
- * be created and so this function will return that instead.
- *
- * Return: ICE pointer on success, NULL if there is no ICE data provided by the
- * consumer or ERR_PTR() on error.
- */
-struct qcom_ice *devm_of_qcom_ice_get(struct device *dev)
-{
-	struct qcom_ice *ice, **dr;
-
-	dr = devres_alloc(devm_of_qcom_ice_put, sizeof(*dr), GFP_KERNEL);
-	if (!dr)
-		return ERR_PTR(-ENOMEM);
-
-	ice = of_qcom_ice_get(dev);
-	if (!IS_ERR_OR_NULL(ice)) {
-		*dr = ice;
-		devres_add(dev, dr);
-	} else {
-		devres_free(dr);
-	}
+out:
+	of_node_put(node);
 
 	return ice;
 }
-EXPORT_SYMBOL_GPL(devm_of_qcom_ice_get);
+EXPORT_SYMBOL_GPL(of_qcom_ice_get);
 
 static int qcom_ice_probe(struct platform_device *pdev)
 {

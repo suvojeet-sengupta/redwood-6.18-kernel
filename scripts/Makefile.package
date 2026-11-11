@@ -62,10 +62,6 @@ rpm-sources: linux.tar.gz
 
 PHONY += rpm-pkg srcrpm-pkg binrpm-pkg
 
-ifneq ($(CC),$(HOSTCC))
-rpm-no-devel = --without=devel
-endif
-
 rpm-pkg:    private build-type := a
 srcrpm-pkg: private build-type := s
 binrpm-pkg: private build-type := b
@@ -76,8 +72,7 @@ rpm-pkg srcrpm-pkg binrpm-pkg: rpmbuild/SPECS/kernel.spec
 	--define='_topdir $(abspath rpmbuild)' \
 	$(if $(filter a b, $(build-type)), \
 		--target $(UTS_MACHINE)-linux --build-in-place --noprep --define='_smp_mflags %{nil}' \
-		$$(rpm -q rpm >/dev/null 2>&1 || echo --nodeps) \
-		$(rpm-no-devel)) \
+		$$(rpm -q rpm >/dev/null 2>&1 || echo --nodeps)) \
 	$(RPMOPTS))
 
 # deb-pkg srcdeb-pkg bindeb-pkg
@@ -152,7 +147,8 @@ snap-pkg:
 PHONY += pacman-pkg
 pacman-pkg:
 	@ln -srf $(srctree)/scripts/package/PKGBUILD $(objtree)/PKGBUILD
-	+BUILDDIR="$(realpath $(objtree))/pacman" \
+	+objtree="$(realpath $(objtree))" \
+		BUILDDIR="$(realpath $(objtree))/pacman" \
 		CARCH="$(UTS_MACHINE)" \
 		KBUILD_MAKEFLAGS="$(MAKEFLAGS)" \
 		KBUILD_REVISION="$(shell $(srctree)/scripts/build-version)" \

@@ -1,13 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for the kernel block device drivers.
-#
-# 12 June 2000, Christoph Hellwig <hch@infradead.org>
-# Rewritten to use lists instead of if-statements.
-# 
 
-# needed for trace events
-ccflags-y				+= -I$(src)
+ccflags-y += -I$(src)
 
 obj-$(CONFIG_MAC_FLOPPY)	+= swim3.o
 obj-$(CONFIG_BLK_DEV_SWIM)	+= swim_mod.o
@@ -21,9 +14,13 @@ obj-$(CONFIG_N64CART)		+= n64cart.o
 obj-$(CONFIG_BLK_DEV_RAM)	+= brd.o
 obj-$(CONFIG_BLK_DEV_LOOP)	+= loop.o
 obj-$(CONFIG_SUNVDC)		+= sunvdc.o
+# Subdirectories
+obj-y += zram/
 
-obj-$(CONFIG_BLK_DEV_NBD)	+= nbd.o
-obj-$(CONFIG_VIRTIO_BLK)	+= virtio_blk.o
+obj-$(CONFIG_VIRTIO_BLK) += virtio_block.o
+virtio_block-objs += virtio_blk.o
+
+obj-$(CONFIG_VIRTIO_BLK_QTI_CRYPTO) += virtio_blk_qti_crypto.o
 
 obj-$(CONFIG_XEN_BLKDEV_FRONTEND)	+= xen-blkfront.o
 obj-$(CONFIG_XEN_BLKDEV_BACKEND)	+= xen-blkback/

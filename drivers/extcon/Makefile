@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
 
-# Makefile for external connector class (extcon) devices
-#
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_EXTCON_QTI_SPMI_MISC) += extcon-qti-spmi-misc.o
+
+obj-$(CONFIG_EXTCON_USB_GPIO) += extcon-usb-gpio.o
 
 obj-$(CONFIG_EXTCON)		+= extcon-core.o
 extcon-core-objs		+= extcon.o devres.o

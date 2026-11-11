@@ -5,6 +5,7 @@
  * Copyright (C) 2016 Linaro Ltd
  * Copyright (C) 2015 Sony Mobile Communications Inc
  * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 #include <linux/cleanup.h>
@@ -18,40 +19,7 @@
 #include <linux/slab.h>
 #include <linux/soc/qcom/mdt_loader.h>
 
-static bool mdt_header_valid(const struct firmware *fw)
-{
-	const struct elf32_hdr *ehdr;
-	size_t phend;
-	size_t shend;
-
-	if (fw->size < sizeof(*ehdr))
-		return false;
-
-	ehdr = (struct elf32_hdr *)fw->data;
-
-	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG))
-		return false;
-
-	if (ehdr->e_phentsize != sizeof(struct elf32_phdr))
-		return false;
-
-	phend = size_add(size_mul(sizeof(struct elf32_phdr), ehdr->e_phnum), ehdr->e_phoff);
-	if (phend > fw->size)
-		return false;
-
-	if (ehdr->e_shentsize || ehdr->e_shnum) {
-		if (ehdr->e_shentsize != sizeof(struct elf32_shdr))
-			return false;
-
-		shend = size_add(size_mul(sizeof(struct elf32_shdr), ehdr->e_shnum), ehdr->e_shoff);
-		if (shend > fw->size)
-			return false;
-	}
-
-	return true;
-}
-
-static bool mdt_phdr_loadable(const struct elf32_phdr *phdr)
+static bool mdt_phdr_valid(const struct elf32_phdr *phdr)
 {
 	if (phdr->p_type != PT_LOAD)
 		return false;
@@ -115,16 +83,13 @@ ssize_t qcom_mdt_get_size(const struct firmware *fw)
 	phys_addr_t max_addr = 0;
 	int i;
 
-	if (!mdt_header_valid(fw))
-		return -EINVAL;
-
 	ehdr = (struct elf32_hdr *)fw->data;
-	phdrs = (struct elf32_phdr *)(fw->data + ehdr->e_phoff);
+	phdrs = (struct elf32_phdr *)(ehdr + 1);
 
 	for (i = 0; i < ehdr->e_phnum; i++) {
 		phdr = &phdrs[i];
 
-		if (!mdt_phdr_loadable(phdr))
+		if (!mdt_phdr_valid(phdr))
 			continue;
 
 		if (phdr->p_paddr < min_addr)
@@ -170,17 +135,19 @@ void *qcom_mdt_read_metadata(const struct firmware *fw, size_t *data_len,
 	ssize_t ret;
 	void *data;
 
-	if (!mdt_header_valid(fw))
-		return ERR_PTR(-EINVAL);
-
 	ehdr = (struct elf32_hdr *)fw->data;
-	phdrs = (struct elf32_phdr *)(fw->data + ehdr->e_phoff);
+	phdrs = (struct elf32_phdr *)(ehdr + 1);
 
-	if (ehdr->e_phnum < 2)
+	if (ehdr->e_phnum < 2 || ehdr->e_phnum > PN_XNUM)
 		return ERR_PTR(-EINVAL);
 
 	if (phdrs[0].p_type == PT_LOAD)
 		return ERR_PTR(-EINVAL);
+
+	if (((size_t)(phdrs + ehdr->e_phnum)) > ((size_t)ehdr + fw->size)) {
+		dev_err(dev, "Invalid phdrs access: %s\n", fw_name);
+		return ERR_PTR(-EINVAL);
+	}
 
 	for (i = 1; i < ehdr->e_phnum; i++) {
 		if ((phdrs[i].p_flags & QCOM_MDT_TYPE_MASK) == QCOM_MDT_TYPE_HASH) {
@@ -235,12 +202,13 @@ EXPORT_SYMBOL_GPL(qcom_mdt_read_metadata);
  * @pas_id:	PAS identifier
  * @mem_phys:	physical address of allocated memory region
  * @ctx:	PAS metadata context, to be released by caller
+ * @dma_phys_below_32b: True, if memory need to be allocated from lower 4G
  *
  * Returns 0 on success, negative errno otherwise.
  */
 int qcom_mdt_pas_init(struct device *dev, const struct firmware *fw,
 		      const char *fw_name, int pas_id, phys_addr_t mem_phys,
-		      struct qcom_scm_pas_metadata *ctx)
+		      struct qcom_scm_pas_metadata *ctx, bool dma_phys_below_32b)
 {
 	const struct elf32_phdr *phdrs;
 	const struct elf32_phdr *phdr;
@@ -253,16 +221,13 @@ int qcom_mdt_pas_init(struct device *dev, const struct firmware *fw,
 	int ret;
 	int i;
 
-	if (!mdt_header_valid(fw))
-		return -EINVAL;
-
 	ehdr = (struct elf32_hdr *)fw->data;
-	phdrs = (struct elf32_phdr *)(fw->data + ehdr->e_phoff);
+	phdrs = (struct elf32_phdr *)(ehdr + 1);
 
 	for (i = 0; i < ehdr->e_phnum; i++) {
 		phdr = &phdrs[i];
 
-		if (!mdt_phdr_loadable(phdr))
+		if (!mdt_phdr_valid(phdr))
 			continue;
 
 		if (phdr->p_flags & QCOM_MDT_RELOCATABLE)
@@ -282,7 +247,8 @@ int qcom_mdt_pas_init(struct device *dev, const struct firmware *fw,
 		goto out;
 	}
 
-	ret = qcom_scm_pas_init_image(pas_id, metadata, metadata_len, ctx);
+	ret = qcom_scm_pas_init_image(pas_id, metadata, metadata_len, ctx,
+				      (dma_phys_below_32b) ? dev : NULL);
 	kfree(metadata);
 	if (ret) {
 		/* Invalid firmware metadata */
@@ -290,11 +256,17 @@ int qcom_mdt_pas_init(struct device *dev, const struct firmware *fw,
 		goto out;
 	}
 
+	/* Store the memory address and size */
+	qcom_scm_pas_store_memoryinfo(pas_id, mem_phys, max_addr - min_addr);
 	if (relocate) {
 		ret = qcom_scm_pas_mem_setup(pas_id, mem_phys, max_addr - min_addr);
 		if (ret) {
 			/* Unable to set up relocation */
 			dev_err(dev, "error %d setting up firmware %s\n", ret, fw_name);
+			if (dma_phys_below_32b)
+				qcom_scm_pas_shutdown(pas_id);
+			qcom_scm_pas_metadata_release(ctx,
+						      (dma_phys_below_32b) ? dev : NULL);
 			goto out;
 		}
 	}
@@ -304,7 +276,7 @@ out:
 }
 EXPORT_SYMBOL_GPL(qcom_mdt_pas_init);
 
-static bool qcom_mdt_bins_are_split(const struct firmware *fw)
+static bool qcom_mdt_bins_are_split(const struct firmware *fw, const char *fw_name)
 {
 	const struct elf32_phdr *phdrs;
 	const struct elf32_hdr *ehdr;
@@ -312,7 +284,7 @@ static bool qcom_mdt_bins_are_split(const struct firmware *fw)
 	int i;
 
 	ehdr = (struct elf32_hdr *)fw->data;
-	phdrs = (struct elf32_phdr *)(fw->data + ehdr->e_phoff);
+	phdrs = (struct elf32_phdr *)(ehdr + 1);
 
 	for (i = 0; i < ehdr->e_phnum; i++) {
 		/*
@@ -333,9 +305,9 @@ static bool qcom_mdt_bins_are_split(const struct firmware *fw)
 }
 
 static int __qcom_mdt_load(struct device *dev, const struct firmware *fw,
-			   const char *fw_name, void *mem_region,
+			   const char *fw_name, int pas_id, void *mem_region,
 			   phys_addr_t mem_phys, size_t mem_size,
-			   phys_addr_t *reloc_base)
+			   phys_addr_t *reloc_base, bool pas_init)
 {
 	const struct elf32_phdr *phdrs;
 	const struct elf32_phdr *phdr;
@@ -352,17 +324,14 @@ static int __qcom_mdt_load(struct device *dev, const struct firmware *fw,
 	if (!fw || !mem_region || !mem_phys || !mem_size)
 		return -EINVAL;
 
-	if (!mdt_header_valid(fw))
-		return -EINVAL;
-
-	is_split = qcom_mdt_bins_are_split(fw);
+	is_split = qcom_mdt_bins_are_split(fw, fw_name);
 	ehdr = (struct elf32_hdr *)fw->data;
-	phdrs = (struct elf32_phdr *)(fw->data + ehdr->e_phoff);
+	phdrs = (struct elf32_phdr *)(ehdr + 1);
 
 	for (i = 0; i < ehdr->e_phnum; i++) {
 		phdr = &phdrs[i];
 
-		if (!mdt_phdr_loadable(phdr))
+		if (!mdt_phdr_valid(phdr))
 			continue;
 
 		if (phdr->p_flags & QCOM_MDT_RELOCATABLE)
@@ -389,7 +358,7 @@ static int __qcom_mdt_load(struct device *dev, const struct firmware *fw,
 	for (i = 0; i < ehdr->e_phnum; i++) {
 		phdr = &phdrs[i];
 
-		if (!mdt_phdr_loadable(phdr))
+		if (!mdt_phdr_valid(phdr))
 			continue;
 
 		offset = phdr->p_paddr - mem_reloc;
@@ -456,12 +425,12 @@ int qcom_mdt_load(struct device *dev, const struct firmware *fw,
 {
 	int ret;
 
-	ret = qcom_mdt_pas_init(dev, fw, firmware, pas_id, mem_phys, NULL);
+	ret = qcom_mdt_pas_init(dev, fw, firmware, pas_id, mem_phys, NULL, false);
 	if (ret)
 		return ret;
 
-	return __qcom_mdt_load(dev, fw, firmware, mem_region, mem_phys,
-			       mem_size, reloc_base);
+	return __qcom_mdt_load(dev, fw, firmware, pas_id, mem_region, mem_phys,
+			       mem_size, reloc_base, true);
 }
 EXPORT_SYMBOL_GPL(qcom_mdt_load);
 
@@ -470,6 +439,7 @@ EXPORT_SYMBOL_GPL(qcom_mdt_load);
  * @dev:	device handle to associate resources with
  * @fw:		firmware object for the mdt file
  * @firmware:	name of the firmware, for construction of segment file names
+ * @pas_id:	PAS identifier
  * @mem_region:	allocated memory region to load firmware into
  * @mem_phys:	physical address of allocated memory region
  * @mem_size:	size of the allocated memory region
@@ -478,11 +448,12 @@ EXPORT_SYMBOL_GPL(qcom_mdt_load);
  * Returns 0 on success, negative errno otherwise.
  */
 int qcom_mdt_load_no_init(struct device *dev, const struct firmware *fw,
-			  const char *firmware, void *mem_region, phys_addr_t mem_phys,
+			  const char *firmware, int pas_id,
+			  void *mem_region, phys_addr_t mem_phys,
 			  size_t mem_size, phys_addr_t *reloc_base)
 {
-	return __qcom_mdt_load(dev, fw, firmware, mem_region, mem_phys,
-			       mem_size, reloc_base);
+	return __qcom_mdt_load(dev, fw, firmware, pas_id, mem_region, mem_phys,
+			       mem_size, reloc_base, false);
 }
 EXPORT_SYMBOL_GPL(qcom_mdt_load_no_init);
 

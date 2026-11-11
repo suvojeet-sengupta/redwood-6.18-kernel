@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-obj-$(CONFIG_IRQCHIP)			+= irqchip.o
 
 obj-$(CONFIG_AL_FIC)			+= irq-al-fic.o
 obj-$(CONFIG_ALPINE_MSI)		+= irq-alpine-msi.o
@@ -135,3 +134,11 @@ obj-$(CONFIG_APPLE_AIC)			+= irq-apple-aic.o
 obj-$(CONFIG_MCHP_EIC)			+= irq-mchp-eic.o
 obj-$(CONFIG_SOPHGO_SG2042_MSI)		+= irq-sg2042-msi.o
 obj-$(CONFIG_SUNPLUS_SP7021_INTC)	+= irq-sp7021-intc.o
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_QCOM_SHOW_RESUME_IRQ) += msm_show_resume_irq.o
+
+obj-$(CONFIG_QCOM_PDC) += qcom-pdc.o
+
+obj-$(CONFIG_MPM_LEGACY) += qcom-mpm.o
+

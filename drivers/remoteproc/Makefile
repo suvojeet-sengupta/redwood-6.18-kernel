@@ -40,3 +40,21 @@ obj-$(CONFIG_TI_K3_DSP_REMOTEPROC)	+= ti_k3_dsp_remoteproc.o ti_k3_common.o
 obj-$(CONFIG_TI_K3_M4_REMOTEPROC)	+= ti_k3_m4_remoteproc.o ti_k3_common.o
 obj-$(CONFIG_TI_K3_R5_REMOTEPROC)	+= ti_k3_r5_remoteproc.o ti_k3_common.o
 obj-$(CONFIG_XLNX_R5_REMOTEPROC)	+= xlnx_r5_remoteproc.o
+
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_QCOM_PIL_INFO) += qcom_pil_info.o
+
+obj-$(CONFIG_QCOM_Q6V5_COMMON) += qcom_q6v5.o
+
+obj-$(CONFIG_QCOM_Q6V5_PAS) += qcom_q6v5_pas.o
+
+obj-$(CONFIG_QCOM_SPSS) += qcom_spss.o
+
+obj-$(CONFIG_QCOM_SYSMON) += qcom_sysmon.o
+
+obj-$(CONFIG_QCOM_RPROC_COMMON) += rproc_qcom_common.o
+rproc_qcom_common-objs += qcom_common.o qcom_tracepoints.o
+
+obj-$(CONFIG_QCOM_RPROC_SLATE)               += qcom_rproc_slate.o
+

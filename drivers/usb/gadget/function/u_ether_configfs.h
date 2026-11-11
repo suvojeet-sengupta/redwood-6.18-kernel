@@ -100,12 +100,12 @@
 					     char *page)		\
 	{								\
 		struct f_##_f_##_opts *opts = to_f_##_f_##_opts(item);	\
-		unsigned qmult;						\
+		unsigned int qmult;						\
 									\
 		mutex_lock(&opts->lock);				\
 		qmult = gether_get_qmult(opts->net);			\
 		mutex_unlock(&opts->lock);				\
-		return sprintf(page, "%d\n", qmult);			\
+		return scnprintf(page, PAGE_SIZE, "%u\n", qmult);	\
 	}								\
 									\
 	static ssize_t _f_##_opts_qmult_store(struct config_item *item, \
@@ -171,7 +171,7 @@ out:									\
 		int ret;						\
 									\
 		mutex_lock(&opts->lock);				\
-		ret = sprintf(page, "%02x\n", opts->_n_);		\
+		ret = scnprintf(page, PAGE_SIZE, "%02x\n", opts->_n_);	\
 		mutex_unlock(&opts->lock);				\
 									\
 		return ret;						\

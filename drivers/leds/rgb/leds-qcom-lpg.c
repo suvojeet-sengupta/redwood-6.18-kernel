@@ -130,6 +130,8 @@ struct lpg {
 
 	struct lpg_channel *channels;
 	unsigned int num_channels;
+
+	bool avoid_hi_res_clk_rates;
 };
 
 /**
@@ -369,7 +371,7 @@ static int lpg_lut_store(struct lpg *lpg, struct led_pattern *pattern,
 {
 	unsigned int idx;
 	u16 val;
-	int i, ret;
+	int i;
 
 	idx = bitmap_find_next_zero_area(lpg->lut_bitmap, lpg->lut_size,
 					 0, len, 0);
@@ -379,10 +381,8 @@ static int lpg_lut_store(struct lpg *lpg, struct led_pattern *pattern,
 	for (i = 0; i < len; i++) {
 		val = pattern[i].brightness;
 
-		ret = regmap_bulk_write(lpg->map, lpg->lut_base + LPG_LUT_REG(idx + i),
-					&val, sizeof(val));
-		if (ret)
-			return ret;
+		regmap_bulk_write(lpg->map, lpg->lut_base + LPG_LUT_REG(idx + i),
+				  &val, sizeof(val));
 	}
 
 	bitmap_set(lpg->lut_bitmap, idx, len);
@@ -426,8 +426,8 @@ static int lpg_calc_freq(struct lpg_channel *chan, uint64_t period)
 	unsigned int div, best_div = 0;
 	unsigned int m, best_m = 0;
 	unsigned int resolution;
-	unsigned int error;
-	unsigned int best_err = UINT_MAX;
+	u64 error;
+	u64 best_err = U64_MAX;
 	u64 max_period, min_period;
 	u64 best_period = 0;
 	u64 max_res;
@@ -451,8 +451,13 @@ static int lpg_calc_freq(struct lpg_channel *chan, uint64_t period)
 	 */
 
 	if (chan->subtype == LPG_SUBTYPE_HI_RES_PWM) {
-		clk_rate_arr = lpg_clk_rates_hi_res;
-		clk_len = ARRAY_SIZE(lpg_clk_rates_hi_res);
+		if (chan->lpg->avoid_hi_res_clk_rates) {
+			clk_rate_arr = lpg_clk_rates;
+			clk_len = ARRAY_SIZE(lpg_clk_rates);
+		} else {
+			clk_rate_arr = lpg_clk_rates_hi_res;
+			clk_len = ARRAY_SIZE(lpg_clk_rates_hi_res);
+		}
 		pwm_resolution_arr = lpg_pwm_resolution_hi_res;
 		pwm_resolution_count = ARRAY_SIZE(lpg_pwm_resolution_hi_res);
 		max_res = LPG_RESOLUTION_15BIT;
@@ -505,7 +510,11 @@ static int lpg_calc_freq(struct lpg_channel *chan, uint64_t period)
 
 				actual = DIV_ROUND_UP_ULL(denominator * (1 << m),
 							  clk_rate_arr[clk_sel]);
-				error = period - actual;
+				if (period > actual)
+					error = period - actual;
+				else
+					error = actual - period;
+
 				if (error < best_err) {
 					best_err = error;
 					best_div = div;
@@ -890,7 +899,7 @@ static int lpg_blink_set(struct lpg_led *led,
 			 unsigned long *delay_on, unsigned long *delay_off)
 {
 	struct lpg_channel *chan;
-	unsigned int period;
+	u64 period;
 	unsigned int triled_mask = 0;
 	struct lpg *lpg = led->lpg;
 	u64 duty;
@@ -1273,12 +1282,7 @@ static int lpg_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 		return ret;
 
 	if (chan->subtype == LPG_SUBTYPE_HI_RES_PWM) {
-		unsigned int clk_idx = FIELD_GET(PWM_CLK_SELECT_HI_RES_MASK, val);
-
-		if (clk_idx >= ARRAY_SIZE(lpg_clk_rates_hi_res))
-			return -EINVAL;
-
-		refclk = lpg_clk_rates_hi_res[clk_idx];
+		refclk = lpg_clk_rates_hi_res[FIELD_GET(PWM_CLK_SELECT_HI_RES_MASK, val)];
 		resolution = lpg_pwm_resolution_hi_res[FIELD_GET(PWM_SIZE_HI_RES_MASK, val)];
 	} else {
 		refclk = lpg_clk_rates[FIELD_GET(PWM_CLK_SELECT_MASK, val)];
@@ -1374,6 +1378,7 @@ static int lpg_add_led(struct lpg *lpg, struct device_node *np)
 {
 	struct led_init_data init_data = {};
 	struct led_classdev *cdev;
+	struct device_node *child;
 	struct mc_subled *info;
 	struct lpg_led *led;
 	const char *state;
@@ -1404,10 +1409,12 @@ static int lpg_add_led(struct lpg *lpg, struct device_node *np)
 		if (!info)
 			return -ENOMEM;
 		i = 0;
-		for_each_available_child_of_node_scoped(np, child) {
+		for_each_available_child_of_node(np, child) {
 			ret = lpg_parse_channel(lpg, child, &led->channels[i]);
-			if (ret < 0)
+			if (ret < 0) {
+				of_node_put(child);
 				return ret;
+			}
 
 			info[i].color_index = led->channels[i]->color;
 			info[i].intensity = 0;
@@ -1603,6 +1610,7 @@ static int lpg_init_sdam(struct lpg *lpg)
 
 static int lpg_probe(struct platform_device *pdev)
 {
+	struct device_node *np;
 	struct lpg *lpg;
 	int ret;
 	int i;
@@ -1617,6 +1625,9 @@ static int lpg_probe(struct platform_device *pdev)
 
 	lpg->dev = &pdev->dev;
 	mutex_init(&lpg->lock);
+
+	lpg->avoid_hi_res_clk_rates =
+		of_property_read_bool(pdev->dev.of_node, "qcom,avoid-hi-res-clk-rates");
 
 	lpg->map = dev_get_regmap(pdev->dev.parent, NULL);
 	if (!lpg->map)
@@ -1642,10 +1653,12 @@ static int lpg_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	for_each_available_child_of_node_scoped(pdev->dev.of_node, np) {
+	for_each_available_child_of_node(pdev->dev.of_node, np) {
 		ret = lpg_add_led(lpg, np);
-		if (ret)
+		if (ret) {
+			of_node_put(np);
 			return ret;
+		}
 	}
 
 	for (i = 0; i < lpg->num_channels; i++)
@@ -1668,6 +1681,22 @@ static const struct lpg_data pm660l_lpg_data = {
 		{ .base = 0xb200, .triled_mask = BIT(6) },
 		{ .base = 0xb300, .triled_mask = BIT(7) },
 		{ .base = 0xb400 },
+	},
+};
+
+static const struct lpg_data pm4125_pwm_data = {
+	.num_channels = 3,
+	.channels = (const struct lpg_channel_data[]) {
+		{ .base = 0xbc00 },
+		{ .base = 0xbd00 },
+		{ .base = 0xbe00 },
+	},
+};
+
+static const struct lpg_data pm6125_pwm_data = {
+	.num_channels = 1,
+	.channels = (const struct lpg_channel_data[]) {
+		{ .base = 0xb300 },
 	},
 };
 
@@ -1737,6 +1766,15 @@ static const struct lpg_data pmi632_lpg_data = {
 	},
 };
 
+static const struct lpg_data pm2250_pwm_data = {
+	.num_channels = 3,
+	.channels = (const struct lpg_channel_data[]) {
+		{ .base = 0xbc00 },
+		{ .base = 0xbd00 },
+		{ .base = 0xbe00 },
+	},
+};
+
 static const struct lpg_data pmi8994_lpg_data = {
 	.lut_base = 0xb000,
 	.lut_size = 24,
@@ -1802,9 +1840,9 @@ static const struct lpg_data pm8150l_lpg_data = {
 };
 
 static const struct lpg_data pm8350c_pwm_data = {
-	.triled_base = 0xef00,
-
 	.lut_size = 122,
+
+	.triled_base = 0xef00,
 
 	.num_channels = 4,
 	.channels = (const struct lpg_channel_data[]) {
@@ -1823,7 +1861,18 @@ static const struct lpg_data pmk8550_pwm_data = {
 	},
 };
 
+static const struct lpg_data pm6450_pwm_data = {
+	.num_channels = 1,
+	.channels = (const struct lpg_channel_data[]) {
+		{ .base = 0xe800 },
+	},
+};
+
 static const struct of_device_id lpg_of_table[] = {
+	{ .compatible = "qcom,pm2250-pwm", .data = &pm2250_pwm_data },
+	{ .compatible = "qcom,pm4125-pwm", .data = &pm4125_pwm_data },
+	{ .compatible = "qcom,pm6125-pwm", .data = &pm6125_pwm_data },
+	{ .compatible = "qcom,pm6450-pwm", .data = &pm6450_pwm_data },
 	{ .compatible = "qcom,pm660l-lpg", .data = &pm660l_lpg_data },
 	{ .compatible = "qcom,pm8150b-lpg", .data = &pm8150b_lpg_data },
 	{ .compatible = "qcom,pm8150l-lpg", .data = &pm8150l_lpg_data },

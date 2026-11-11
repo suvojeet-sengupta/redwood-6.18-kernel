@@ -84,7 +84,7 @@ struct servreg_set_ack_resp {
 
 struct servreg_loc_pfr_req {
 	char service[SERVREG_NAME_LENGTH + 1];
-	char reason[SERVREG_PFR_LENGTH + 1];
+	char reason[257];
 };
 
 struct servreg_loc_pfr_resp {

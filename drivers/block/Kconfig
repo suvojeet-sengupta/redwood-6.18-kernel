@@ -303,6 +303,7 @@ config XEN_BLKDEV_BACKEND
 	  compile this driver as a module, chose M here: the module
 	  will be called xen-blkback.
 
+menu "blk dev"
 
 config VIRTIO_BLK
 	tristate "Virtio block driver"
@@ -376,3 +377,21 @@ config BLK_DEV_ZONED_LOOP
 	  If unsure, say N.
 
 endif # BLK_DEV
+	  QEMU based VMMs (like KVM or Xen).
+	  Virtio block devices provide a paravirtualized interface that enables
+	  efficient data transfer between the guest and host systems.
+	  By enabling this driver, the guest operating system can recognize and
+	  interact with block devices such as virtual hard disks offered by the
+	  hypervisor through the virtio protocol.
+	  Say Y or M.
+
+config VIRTIO_BLK_QTI_CRYPTO
+	tristate "Vendor specific VIRTIO Crypto Engine Support"
+	depends on VIRTIO_BLK && QTI_CRYPTO_VIRTUALIZATION
+	help
+	 Enable storage inline crypto engine support for guest virtual machine.
+	 Enabling this allows kernel to use crypto operations defined
+	 and implemented by QTI.
+	 Say Y or M.
+
+endmenu

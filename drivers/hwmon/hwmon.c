@@ -6,7 +6,6 @@
  *
  * Copyright (C) 2005 Mark M. Hoffman <mhoffman@lightlink.com>
  */
-
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/bitops.h>
@@ -1229,6 +1228,24 @@ error:
 	return hwdev;
 }
 EXPORT_SYMBOL_GPL(devm_hwmon_device_register_with_info);
+
+static int devm_hwmon_match(struct device *dev, void *res, void *data)
+{
+	struct device **hwdev = res;
+
+	return *hwdev == data;
+}
+
+/**
+ * devm_hwmon_device_unregister - removes a previously registered hwmon device
+ *
+ * @dev: the parent device of the device to unregister
+ */
+void devm_hwmon_device_unregister(struct device *dev)
+{
+	WARN_ON(devres_release(dev, devm_hwmon_release, devm_hwmon_match, dev));
+}
+EXPORT_SYMBOL_GPL(devm_hwmon_device_unregister);
 
 static char *__hwmon_sanitize_name(struct device *dev, const char *old_name)
 {

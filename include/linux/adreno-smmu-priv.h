@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2020 Google, Inc
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef __ADRENO_SMMU_PRIV_H
 #define __ADRENO_SMMU_PRIV_H
 
 #include <linux/io-pgtable.h>
+#include <linux/qcom-io-pgtable.h>
 
 /**
  * struct adreno_smmu_fault_info - container for key fault information
@@ -45,16 +47,12 @@ struct adreno_smmu_fault_info {
  *                 TTBR0 translation is enabled with the specified cfg
  * @get_fault_info: Called by the GPU fault handler to get information about
  *                  the fault
- * @set_stall:     Configure whether stall on fault (CFCFG) is enabled. If
- *                 stalling on fault is enabled, the GPU driver must call
- *                 resume_translation()
+ * @set_stall:     Configure whether stall on fault (CFCFG) is enabled.  Call
+ *                 before set_ttbr0_cfg().  If stalling on fault is enabled,
+ *                 the GPU driver must call resume_translation()
  * @resume_translation: Resume translation after a fault
+ * @pgtbl_info:    io-pagetables info for the GPUs context-bank
  *
- * @set_prr_bit:   [optional] Configure the GPU's Partially Resident
- *                 Region (PRR) bit in the ACTLR register.
- * @set_prr_addr:  [optional] Configure the PRR_CFG_*ADDR register with
- *                 the physical address of PRR page passed from GPU
- *                 driver.
  *
  * The GPU driver (drm/msm) and adreno-smmu work together for controlling
  * the GPU's SMMU instance.  This is by necessity, as the GPU is directly
@@ -66,14 +64,13 @@ struct adreno_smmu_fault_info {
  * it's domain.
  */
 struct adreno_smmu_priv {
-    const void *cookie;
-    const struct io_pgtable_cfg *(*get_ttbr1_cfg)(const void *cookie);
-    int (*set_ttbr0_cfg)(const void *cookie, const struct io_pgtable_cfg *cfg);
-    void (*get_fault_info)(const void *cookie, struct adreno_smmu_fault_info *info);
-    void (*set_stall)(const void *cookie, bool enabled);
-    void (*resume_translation)(const void *cookie, bool terminate);
-    void (*set_prr_bit)(const void *cookie, bool set);
-    void (*set_prr_addr)(const void *cookie, phys_addr_t page_addr);
+	const void *cookie;
+	const struct io_pgtable_cfg *(*get_ttbr1_cfg)(const void *cookie);
+	int (*set_ttbr0_cfg)(const void *cookie, const struct io_pgtable_cfg *cfg);
+	void (*get_fault_info)(const void *cookie, struct adreno_smmu_fault_info *info);
+	void (*set_stall)(const void *cookie, bool enabled);
+	void (*resume_translation)(const void *cookie, bool terminate);
+	struct qcom_io_pgtable_info pgtbl_info;
 };
 
 #endif /* __ADRENO_SMMU_PRIV_H */

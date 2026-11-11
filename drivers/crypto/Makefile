@@ -50,3 +50,8 @@ obj-y += intel/
 obj-y += starfive/
 obj-y += cavium/
 obj-y += ti/
+
+ccflags-y += -I$(src)
+
+obj-$(CONFIG_CRYPTO_DEV_QCOM_RNG) += qcom-rng.o
+

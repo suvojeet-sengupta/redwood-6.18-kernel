@@ -2,6 +2,7 @@
 /*
  * Qualcomm Technology Inc. ADSP Peripheral Image Loader for SDM845.
  * Copyright (c) 2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/clk.h>
@@ -29,7 +30,7 @@
 #include "qcom_common.h"
 #include "qcom_pil_info.h"
 #include "qcom_q6v5.h"
-#include "remoteproc_internal.h"
+#include "drivers/remoteproc/remoteproc_internal.h"
 
 /* time out value */
 #define ACK_TIMEOUT			1000
@@ -717,7 +718,7 @@ static int adsp_probe(struct platform_device *pdev)
 		goto disable_pm;
 
 	ret = qcom_q6v5_init(&adsp->q6v5, pdev, rproc, desc->crash_reason_smem,
-			     desc->load_state, qcom_adsp_pil_handover);
+			     0, 0, desc->load_state, qcom_adsp_pil_handover);
 	if (ret)
 		goto disable_pm;
 
@@ -729,22 +730,15 @@ static int adsp_probe(struct platform_device *pdev)
 					      desc->ssctl_id);
 	if (IS_ERR(adsp->sysmon)) {
 		ret = PTR_ERR(adsp->sysmon);
-		goto deinit_remove_glink_pdm_ssr;
+		goto disable_pm;
 	}
 
 	ret = rproc_add(rproc);
 	if (ret)
-		goto remove_sysmon;
+		goto disable_pm;
 
 	return 0;
 
-remove_sysmon:
-	qcom_remove_sysmon_subdev(adsp->sysmon);
-deinit_remove_glink_pdm_ssr:
-	qcom_q6v5_deinit(&adsp->q6v5);
-	qcom_remove_glink_subdev(rproc, &adsp->glink_subdev);
-	qcom_remove_pdm_subdev(rproc, &adsp->pdm_subdev);
-	qcom_remove_ssr_subdev(rproc, &adsp->ssr_subdev);
 disable_pm:
 	qcom_rproc_pds_detach(adsp);
 

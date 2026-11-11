@@ -1,7 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for the Linux network device drivers.
-#
 
 #
 # Networking Core Drivers
@@ -27,22 +24,14 @@ obj-$(CONFIG_NETKIT) += netkit.o
 obj-y += phy/
 obj-y += pse-pd/
 obj-y += mdio/
+ccflags-y += -I$(src)
+
+# Subdirectories
+obj-y += ethernet/stmicro/stmmac/
+obj-y += mdio_fe/
 obj-y += pcs/
-obj-$(CONFIG_RIONET) += rionet.o
-obj-$(CONFIG_NET_TEAM) += team/
-obj-$(CONFIG_TUN) += tun.o
-obj-$(CONFIG_TAP) += tap.o
-obj-$(CONFIG_VETH) += veth.o
-obj-$(CONFIG_VIRTIO_NET) += virtio_net.o
-obj-$(CONFIG_VXLAN) += vxlan/
-obj-$(CONFIG_GENEVE) += geneve.o
-obj-$(CONFIG_BAREUDP) += bareudp.o
-obj-$(CONFIG_GTP) += gtp.o
-obj-$(CONFIG_NLMON) += nlmon.o
-obj-$(CONFIG_PFCP) += pfcp.o
-obj-$(CONFIG_NET_VRF) += vrf.o
-obj-$(CONFIG_VSOCKMON) += vsockmon.o
-obj-$(CONFIG_MHI_NET) += mhi_net.o
+obj-y += phy/aquantia/
+obj-y += phy/qcom/
 
 #
 # Networking Drivers
@@ -76,17 +65,13 @@ obj-$(CONFIG_WLAN) += wireless/
 obj-$(CONFIG_IEEE802154) += ieee802154/
 obj-$(CONFIG_WWAN) += wwan/
 obj-$(CONFIG_MCTP) += mctp/
+obj-$(CONFIG_DP83867_PHY) += phy/dp83867.o
 
-obj-$(CONFIG_VMXNET3) += vmxnet3/
-obj-$(CONFIG_XEN_NETDEV_FRONTEND) += xen-netfront.o
-obj-$(CONFIG_XEN_NETDEV_BACKEND) += xen-netback/
+obj-$(CONFIG_FAILOVER) += failover.o
+failover-objs += ../../net/core/failover.o
 
-obj-$(CONFIG_USB_NET_DRIVERS) += usb/
-
-obj-$(CONFIG_HYPERV_NET) += hyperv/
-obj-$(CONFIG_NTB_NETDEV) += ntb_netdev.o
-
-obj-$(CONFIG_FUJITSU_ES) += fjes/
-obj-$(CONFIG_USB4_NET) += thunderbolt/
-obj-$(CONFIG_NETDEVSIM) += netdevsim/
 obj-$(CONFIG_NET_FAILOVER) += net_failover.o
+
+obj-$(CONFIG_VIRTIO_NET) += virtio_net.o
+virtio_net-objs += virtio_net_fixed.o
+

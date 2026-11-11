@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2011-2017, The Linux Foundation
+ * Copyright (c) 2022, 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/slab.h>
 #include <linux/pm_runtime.h>
 #include "slimbus.h"
+#include <linux/io.h>
 
 /**
  * slim_msg_response() - Deliver Message response received from a device to the
@@ -13,8 +15,8 @@
  *
  * @ctrl: Controller handle
  * @reply: Reply received from the device
- * @tid: Transaction ID received with which framework can associate reply.
  * @len: Length of the reply
+ * @tid: Transaction ID received with which framework can associate reply.
  *
  * Called by controller to inform framework about the response received.
  * This helps in making the API asynchronous, and controller-driver doesn't need
@@ -42,7 +44,7 @@ void slim_msg_response(struct slim_controller *ctrl, u8 *reply, u8 tid, u8 len)
 	}
 
 	slim_free_txn_tid(ctrl, txn);
-	memcpy(msg->rbuf, reply, len);
+	memcpy_fromio(msg->rbuf, reply, len);
 	if (txn->comp)
 		complete(txn->comp);
 
@@ -111,8 +113,8 @@ int slim_do_transfer(struct slim_controller *ctrl, struct slim_msg_txn *txn)
 {
 	DECLARE_COMPLETION_ONSTACK(done);
 	bool need_tid = false, clk_pause_msg = false;
-	int ret;
-	unsigned long time_left;
+	int ret, timeout;
+	struct completion *comp;
 
 	/*
 	 * do not vote for runtime-PM if the transactions are part of clock
@@ -124,14 +126,6 @@ int slim_do_transfer(struct slim_controller *ctrl, struct slim_msg_txn *txn)
 		 txn->mc <= SLIM_MSG_MC_RECONFIGURE_NOW))
 		clk_pause_msg = true;
 
-	if (!clk_pause_msg) {
-		ret = pm_runtime_get_sync(ctrl->dev);
-		if (ctrl->sched.clk_state != SLIM_CLK_ACTIVE) {
-			dev_err(ctrl->dev, "ctrl wrong state:%d, ret:%d\n",
-				ctrl->sched.clk_state, ret);
-			goto slim_xfer_err;
-		}
-	}
 	/* Initialize tid to invalid value */
 	txn->tid = 0;
 	need_tid = slim_tid_txn(txn->mt, txn->mc);
@@ -141,20 +135,48 @@ int slim_do_transfer(struct slim_controller *ctrl, struct slim_msg_txn *txn)
 		if (ret)
 			return ret;
 
-		if (!txn->msg->comp)
+		if (!txn->msg->comp) {
+			comp = txn->comp;
 			txn->comp = &done;
+		}
+	}
+
+	if (!clk_pause_msg) {
+		ret = pm_runtime_get_sync(ctrl->dev);
+		if (ret < 0) {
+			dev_err(ctrl->dev, "runtime resume failed ret:%d\n",
+				ret);
+			slim_free_txn_tid(ctrl, txn);
+			pm_runtime_put_noidle(ctrl->dev);
+			/* Set device in suspended since resume failed */
+			pm_runtime_set_suspended(ctrl->dev);
+			if (need_tid && !txn->msg->comp)
+				txn->comp = comp;
+			return ret;
+		}
+
+		if (ctrl->sched.clk_state != SLIM_CLK_ACTIVE) {
+			dev_err(ctrl->dev, "ctrl wrong state:%d, ret:%d\n",
+				ctrl->sched.clk_state, ret);
+			if (need_tid && !txn->msg->comp)
+				txn->comp = comp;
+			goto slim_xfer_err;
+		}
 	}
 
 	ret = ctrl->xfer_msg(ctrl, txn);
-	if (ret == -ETIMEDOUT) {
+
+	if (ret == -ETIMEDOUT)
 		slim_free_txn_tid(ctrl, txn);
-	} else if (!ret && need_tid && !txn->msg->comp) {
+
+	if (!ret && need_tid && !txn->msg->comp) {
 		unsigned long ms = txn->rl + HZ;
 
-		time_left = wait_for_completion_timeout(txn->comp,
-							msecs_to_jiffies(ms));
-		if (!time_left) {
+		timeout = wait_for_completion_timeout(txn->comp,
+						      msecs_to_jiffies(ms));
+		if (!timeout) {
 			ret = -ETIMEDOUT;
+			txn->comp = NULL;
 			slim_free_txn_tid(ctrl, txn);
 		}
 	}
@@ -222,7 +244,7 @@ static u16 slim_slicesize(int code)
 /**
  * slim_xfer_msg() - Transfer a value info message on slim device
  *
- * @sbdev: slim device to which this msg has to be transferred
+ * @sbdev: slim device to which this msg has to be transfered
  * @msg: value info message pointer
  * @mc: message code of the message
  *

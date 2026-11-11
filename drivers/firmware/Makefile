@@ -38,3 +38,10 @@ obj-y				+= samsung/
 obj-y				+= smccc/
 obj-y				+= tegra/
 obj-y				+= xilinx/
+
+
+# Subdirectories
+obj-y += arm_ffa/
+obj-y += arm_scmi/
+obj-y += qcom/
+

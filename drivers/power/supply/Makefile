@@ -1,23 +1,20 @@
 # SPDX-License-Identifier: GPL-2.0
-subdir-ccflags-$(CONFIG_POWER_SUPPLY_DEBUG) := -DDEBUG
 
-power_supply-y				:= power_supply_core.o
-power_supply-$(CONFIG_SYSFS)		+= power_supply_sysfs.o
-power_supply-$(CONFIG_LEDS_TRIGGERS)	+= power_supply_leds.o
+ccflags-y += -I$(src)
 
 obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
 obj-$(CONFIG_POWER_SUPPLY_HWMON) += power_supply_hwmon.o
 obj-$(CONFIG_ADC_BATTERY_HELPER) += adc-battery-helper.o
 obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
+# Subdirectories
+obj-y += qcom/
 
-obj-$(CONFIG_APM_POWER)		+= apm_power.o
-obj-$(CONFIG_AXP20X_POWER)	+= axp20x_usb_power.o
-obj-$(CONFIG_IP5XXX_POWER)	+= ip5xxx_power.o
-obj-$(CONFIG_MAX8925_POWER)	+= max8925_power.o
-obj-$(CONFIG_WM831X_BACKUP)	+= wm831x_backup.o
-obj-$(CONFIG_WM831X_POWER)	+= wm831x_power.o
-obj-$(CONFIG_WM8350_POWER)	+= wm8350_power.o
-obj-$(CONFIG_TEST_POWER)	+= test_power.o
+obj-$(CONFIG_QTI_BATTERY_CHARGER) += qti-battery-charger.o
+qti-battery-charger-objs += qti_battery_charger.o qti_battery_charger_xiaomi.o qti_charger_boost_lib.o qti_typec_class.o
+CFLAGS_qti_battery_charger.o += -DCONFIG_BQ_FG_1S -DCONFIG_BQ2597X -DCONFIG_BQ_CLOUD_AUTHENTICATION -DCONFIG_BQ_FUEL_GAUGE -DCONFIG_REDWOOD_FOR_BUILD -DCONFIG_AI_RSOC_M20
+CFLAGS_qti_battery_charger_xiaomi.o += $(CFLAGS_qti_battery_charger.o)
+
+obj-$(CONFIG_BATTERY_MAX1720X) += max1720x_battery.o
 
 obj-$(CONFIG_BATTERY_88PM860X)	+= 88pm860x_battery.o
 obj-$(CONFIG_CHARGER_ADP5061)	+= adp5061.o

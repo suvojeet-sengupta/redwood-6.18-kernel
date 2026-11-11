@@ -10,36 +10,52 @@ config QCOM_SCM
 	select QCOM_TZMEM
 	tristate
 
-config QCOM_TZMEM
-	tristate
-	select GENERIC_ALLOCATOR
+config QCOM_TZMEM_FFA
+	bool "QCOM TZMEM FFA support"
+	depends on QCOM_TZMEM && ARM_FFA_TRANSPORT
+	default n
+	help
+	  This option enables support for QCOM TZMEM FFA.
 
-choice
-	prompt "TrustZone interface memory allocator mode"
+	  This feature config enable FFA support in qcom_tzmem driver.
+	  Please note, FFA memory sharing is different aspect compared to older
+	  older method of plugging feature via scm calls.
+	  With this, traditional method of memory sharing will be replaced with
+	  FFA based implementation.
+
+config QCOM_TZMEM_LOW_MEMORY
+	bool "Enable low memory mode for QCOM TZMEM"
 	depends on QCOM_TZMEM
-	default QCOM_TZMEM_MODE_GENERIC
+	default n
 	help
-	  Selects the mode of the memory allocator providing memory buffers of
-	  suitable format for sharing with the TrustZone. If in doubt, select
-	  'Generic'.
+	  This option enables low-memory behavior for qcom_tzmem users.
+	  When enabled, smaller pool sizes are used in initialization
+	  paths(like scm and shmbridge), and runtime fallback allocation from qcom_tzmem
+	  is disabled once the pool memory is exhausted.
 
-config QCOM_TZMEM_MODE_GENERIC
-	bool "Generic"
+	  Say 'Y' here for low-memory targets (QTVM, for example).
+
+config QTEE_SHM_BRIDGE
+	bool "QTI TEE shared memory bridge"
+	depends on QCOM_SCM && QCOM_TZMEM
+	default y if QCOM_SCM
 	help
-	  Use the generic allocator mode. The memory is page-aligned, non-cachable
-	  and physically contiguous.
+	  QTEE shared memory bridge driver provides kernel APIs to share
+	  memory between trustzone & other VMs through shared memory bridge.
+	  It allows kernel clients to create bridge, delete bridge, and do
+	  memory sub-allocation and free from the default kernel bridge
+	  created by bridge driver.
 
-config QCOM_TZMEM_MODE_SHMBRIDGE
-	bool "SHM Bridge"
+config QCOM_SCM_DOWNLOAD_MODE_DEFAULT
+	bool "Qualcomm download mode enabled by default"
+	depends on QCOM_SCM
 	help
-	  Use Qualcomm Shared Memory Bridge. The memory has the same alignment as
-	  in the 'Generic' allocator but is also explicitly marked as an SHM Bridge
-	  buffer.
+	  A device with "download mode" enabled will upon an unexpected
+	  warm-restart enter a special debug mode that allows the user to
+	  "download" memory content over USB for offline postmortem analysis.
+	  The feature can be enabled/disabled on the kernel command line.
 
-	  With this selected, all buffers passed to the TrustZone must be allocated
-	  using the TZMem allocator or else the TrustZone will refuse to use them.
-
-endchoice
+	  Say Y here to enable "download mode" by default.
 
 config QCOM_QSEECOM
 	bool "Qualcomm QSEECOM interface driver"
@@ -73,5 +89,31 @@ config QCOM_QSEECOM_UEFISECAPP
 
 	  Select Y here to provide access to EFI variables on the aforementioned
 	  platforms.
+
+config QCOM_SCM_SMCI
+	tristate "Qualcomm SMC Invoke Support"
+	depends on QCOM_SCM
+	depends on QCOM_SI_CORE
+	help
+	  Various Qualcomm SoCs have a Trusted Execution Environment (TEE) running
+	  in the Trust Zone. This module provides an interface to that via the
+	  capability based object invocation, using SI-CORE.
+
+	  Enable SCM_SMCI driver which supports capability based secure
+	  communication between QTEE and VM. Using SCM_SMCI, kernel can
+	  issue calls to QTEE or TAs to request a service or exposes services
+	  to QTEE and TAs. The SCM_SMCI implements the necessary marshaling of
+	  messages with QTEE.
+
+config PKVM_SECURE_MEMORY_MANAGER
+	tristate "PKVM SecureMemory Manager"
+	help
+	  This driver implements secure memory management for protected KVM
+	  (pKVM) on Qualcomm platforms. It queries TrustZone for secure memory
+	  region descriptors and loads an EL2 module to unmap those secure
+	  regions from the Host stage-2 page tables, preventing host access to
+	  hypervisor-protected memory.
+
+source "$(KCONFIG_EXT_PREFIX)drivers/firmware/qcom/si_core/Kconfig"
 
 endmenu

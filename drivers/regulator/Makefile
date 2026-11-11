@@ -1,15 +1,30 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for regulator drivers.
-#
 
+ccflags-y += -I$(src)
 
-obj-$(CONFIG_REGULATOR) += core.o dummy.o fixed-helper.o helpers.o devres.o irq_helpers.o
-obj-$(CONFIG_REGULATOR_NETLINK_EVENTS) += event.o
-obj-$(CONFIG_OF) += of_regulator.o
-obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o
-obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
-obj-$(CONFIG_REGULATOR_USERSPACE_CONSUMER) += userspace-consumer.o
+obj-$(CONFIG_REGULATOR_DEBUG_CONTROL) += debug-regulator.o
+
+obj-$(CONFIG_REGULATOR_PROXY_CONSUMER) += proxy-consumer.o
+
+obj-$(CONFIG_REGULATOR_QCOM_AMOLED) += qcom-amoled-regulator.o
+
+obj-$(CONFIG_REGULATOR_QTI_FIXED_VOLTAGE) += qti-fixed-regulator.o
+qti-fixed-regulator-objs += qti_fixed_regulator.o
+CFLAGS_qti_fixed_regulator.o += -DQTI_FIXED_REGULATOR
+
+obj-$(CONFIG_REGULATOR_QTI_OCP_NOTIFIER) += qti-ocp-notifier.o
+
+obj-$(CONFIG_REGULATOR_RPMH) += rpmh-regulator.o
+
+obj-$(CONFIG_REGULATOR_RPM_SMD) += rpm-smd-regulator.o
+
+obj-$(CONFIG_REGULATOR_STUB) += stub-regulator.o
+
+obj-$(CONFIG_VIRTIO_REGULATOR) += virtio_regulator.o
+
+obj-$(CONFIG_REGULATOR_REFGEN) += refgen.o
+
+obj-$(CONFIG_REGULATOR_QPNP_LCDB) += qpnp-lcdb-regulator.o
 
 obj-$(CONFIG_REGULATOR_88PG86X) += 88pg86x.o
 obj-$(CONFIG_REGULATOR_88PM800) += 88pm800-regulator.o
@@ -210,5 +225,6 @@ obj-$(CONFIG_REGULATOR_WM831X) += wm831x-ldo.o
 obj-$(CONFIG_REGULATOR_WM8350) += wm8350-regulator.o
 obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
 obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
+obj-$(CONFIG_REGULATOR_QCOM_PM8008) += qcom-pm8008-regulator.o
 
-ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
+obj-$(CONFIG_REGULATOR_RENESAS_SLG5B) += renesas-slg5b.o

@@ -37,10 +37,7 @@ ifeq ($(CONFIG_OF), y)
 obj-$(CONFIG_COMMON_CLK)	+= clk-conf.o
 endif
 
-# KUnit specific helpers
-ifeq ($(CONFIG_COMMON_CLK), y)
-obj-$(CONFIG_KUNIT)		+= clk_kunit_helpers.o
-endif
+ccflags-y += -I$(src)
 
 # hardware specific clock types
 # please keep this section sorted lexicographically by file path name
@@ -168,3 +165,8 @@ endif
 obj-y					+= xilinx/
 obj-$(CONFIG_ARCH_ZYNQ)			+= zynq/
 obj-$(CONFIG_COMMON_CLK_ZYNQMP)         += zynqmp/
+# Subdirectories
+obj-y += qcom/
+
+obj-$(CONFIG_COMMON_CLK_SCMI) += clk-scmi.o
+

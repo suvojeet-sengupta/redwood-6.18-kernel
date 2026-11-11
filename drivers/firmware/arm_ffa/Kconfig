@@ -1,4 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0-only
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/kconfig-language.rst.
+#
+
+menu "Firmware Drivers"
+
+source "$(KCONFIG_EXT_PREFIX)drivers/firmware/arm_scmi/Kconfig"
+source "$(KCONFIG_EXT_PREFIX)drivers/firmware/qcom/Kconfig"
+
 config ARM_FFA_TRANSPORT
 	tristate "Arm Firmware Framework for Armv8-A"
 	depends on OF
@@ -19,3 +29,4 @@ config ARM_FFA_SMCCC
 	bool
 	default ARM_FFA_TRANSPORT
 	depends on ARM64 && HAVE_ARM_SMCCC_DISCOVERY
+endmenu

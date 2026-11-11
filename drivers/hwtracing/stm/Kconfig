@@ -40,6 +40,20 @@ config STM_PROTO_SYS_T
 
 	  If you don't know what this is, say N.
 
+config STM_PROTO_OST
+	tristate "MIPI OST STM framing protocol driver"
+	default CONFIG_STM
+	help
+	  This is an implementation of MIPI OST protocol to be used
+	  over the STP transport. In addition to the data payload, it
+	  also carries additional metadata for entity, better
+	  means of trace source identification, etc.
+
+	  The receiving side must be able to decode this protocol in
+	  addition to the MIPI STP, in order to extract the data.
+
+	  If you don't know what this is, say N.
+
 config STM_DUMMY
 	tristate "Dummy STM driver"
 	help
@@ -47,6 +61,23 @@ config STM_DUMMY
 	  and discards your data. Use for stm class testing.
 
 	  If you don't know what this is, say N.
+
+config STM_PASSTHROUGH
+	tristate "STM passthrough driver for GVM-to-PVM trace forwarding"
+	depends on OF
+	help
+	  This driver enables Linux STM framework sources (ftrace, console, etc.)
+	  running inside a hypervisor Guest Virtual Machine (GVM) to forward
+	  trace data to the host Primary VM's (PVM) CoreSight STM hardware via
+	  a hypervisor memory-mapped passthrough region.
+
+	  The PVM must grant the GVM access to its STM stimulus port, and the
+	  GVM device tree must describe the region via a "qcom,stm-passthrough"
+	  compatible node. Trace data written through the Linux STM framework
+	  inside the GVM will appear in the PVM's .bin trace collection.
+
+	  Say M to build as a loadable module for GVM targets. Say N on targets
+	  that do not run as a guest virtual machine.
 
 config STM_SOURCE_CONSOLE
 	tristate "Kernel console over STM devices"

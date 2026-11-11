@@ -1,7 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-#
-# Makefile for the Linux Kernel SOC specific device drivers.
-#
 
 obj-y				+= apple/
 obj-y				+= aspeed/
@@ -37,3 +34,7 @@ obj-$(CONFIG_ARCH_U8500)	+= ux500/
 obj-y				+= versatile/
 obj-y				+= vt8500/
 obj-y				+= xilinx/
+
+# Subdirectories
+obj-y += qcom/
+
