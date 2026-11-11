@@ -89,4 +89,13 @@ endif
 
 source "drivers/gpu/trace/Kconfig"
 
+config REDWOOD_SPLASHCON
+	bool "Kernel log on the bootloader's splash framebuffer (redwood bring-up)"
+	depends on ARCH_QCOM && FONT_SUPPORT && FONT_8x16
+	help
+	  Draw the kernel log into the framebuffer the bootloader left on
+	  screen, from early boot on, for bringing up a kernel before its
+	  display driver works. Finds the buffer from the display pipe the
+	  bootloader programmed. Say N for normal kernels.
+
 endmenu

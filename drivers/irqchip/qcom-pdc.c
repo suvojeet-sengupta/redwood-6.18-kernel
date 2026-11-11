@@ -633,8 +633,14 @@ fail:
 	return ret;
 }
 
+/* 6.18 irqchip platform drivers get the platform device, not its node */
+static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *parent)
+{
+	return qcom_pdc_init(pdev->dev.of_node, parent);
+}
+
 IRQCHIP_PLATFORM_DRIVER_BEGIN(qcom_pdc)
-IRQCHIP_MATCH("qcom,pdc", qcom_pdc_init)
+IRQCHIP_MATCH("qcom,pdc", qcom_pdc_probe)
 IRQCHIP_PLATFORM_DRIVER_END(qcom_pdc)
 MODULE_DESCRIPTION("Qualcomm Technologies, Inc. Power Domain Controller");
 MODULE_LICENSE("GPL v2");
