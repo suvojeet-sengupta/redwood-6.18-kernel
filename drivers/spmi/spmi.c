@@ -64,7 +64,11 @@ int spmi_device_add(struct spmi_device *sdev)
 	struct spmi_controller *ctrl = sdev->ctrl;
 	int err;
 
-	dev_set_name(&sdev->dev, "%d-%02x", ctrl->nr, sdev->usid);
+	/*
+	 * redwood: keep the 5.4 names (spmi0-02, not 0-02). Every redwood
+	 * ROM's ueventd.rc, sepolicy and torch HAL use the old sysfs paths.
+	 */
+	dev_set_name(&sdev->dev, "spmi%d-%02x", ctrl->nr, sdev->usid);
 
 	err = device_add(&sdev->dev);
 	if (err < 0) {

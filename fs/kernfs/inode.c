@@ -321,6 +321,11 @@ int kernfs_xattr_set(struct kernfs_node *kn, const char *name,
 	simple_xattr_free(old_xattr);
 	return 0;
 }
+/*
+ * redwood: msm-vidc labels its sku_version node with this before the
+ * SELinux policy loads, as restorecon would.
+ */
+EXPORT_SYMBOL_GPL(kernfs_xattr_set);
 
 static int kernfs_vfs_xattr_get(const struct xattr_handler *handler,
 				struct dentry *unused, struct inode *inode,

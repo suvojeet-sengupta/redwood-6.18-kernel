@@ -1483,7 +1483,17 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 
 static int gic_retrigger(struct irq_data *data)
 {
-	return !gic_irq_set_irqchip_state(data, IRQCHIP_STATE_PENDING, true);
+	/*
+	 * redwood runs Linux under Qualcomm's Gunyah hypervisor. Its vGIC
+	 * asserts (vgic_redeliver_lr: old_hstate == VGIC_HWIRQ_STATE_INACTIVE)
+	 * and resets the phone through the secure watchdog when a hardware
+	 * interrupt it still has in flight is made pending again through
+	 * GICD_ISPENDR. Resending the edge interrupts that fired during
+	 * suspend that way reset the phone every few minutes on the charger.
+	 * Returning 0 makes the IRQ core resend them in software, as 5.4,
+	 * whose GICv3 driver had no irq_retrigger, always did.
+	 */
+	return 0;
 }
 
 #ifdef CONFIG_CPU_PM

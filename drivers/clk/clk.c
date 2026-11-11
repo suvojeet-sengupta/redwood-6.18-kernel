@@ -1518,7 +1518,12 @@ unlock_out:
 		clk_core_disable_unprepare(core->parent);
 }
 
-static bool clk_ignore_unused __initdata;
+/*
+ * redwood: on by default, as if clk_ignore_unused were on the command line.
+ * Turning unused clocks off before the display driver takes over the
+ * bootloader's splash kills the panel, and ROMs built for 5.4 don't pass it.
+ */
+static bool clk_ignore_unused __initdata = true;
 static int __init clk_ignore_unused_setup(char *__unused)
 {
 	clk_ignore_unused = true;

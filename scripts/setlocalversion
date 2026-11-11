@@ -209,4 +209,6 @@ elif [ "${LOCALVERSION+set}" != "set" ]; then
 	scm_version="$(scm_version --short)"
 fi
 
-echo "${KERNELVERSION}${file_localversion}${config_localversion}${LOCALVERSION}${scm_version}"
+# redwood: release the kernel as Suvkernel, like the 5.4 builds, instead of
+# Kleaf's -android16-6-maybe-dirty plus the lahaina -4k
+echo "${KERNELVERSION}-Suvkernel"

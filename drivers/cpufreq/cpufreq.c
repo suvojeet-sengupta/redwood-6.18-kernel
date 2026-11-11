@@ -688,6 +688,17 @@ static struct cpufreq_governor *cpufreq_parse_governor(char *str_governor)
 {
 	struct cpufreq_governor *t;
 
+	/*
+	 * redwood: post_boot scripts written for 5.4 pick "schedutil", which
+	 * here would take frequency control away from WALT. Give them WALT's
+	 * governor, which has the same tunables.
+	 */
+	if (!strncasecmp(str_governor, "schedutil", CPUFREQ_NAME_LEN)) {
+		t = get_governor("walt");
+		if (t)
+			return t;
+	}
+
 	t = get_governor(str_governor);
 	if (t)
 		return t;

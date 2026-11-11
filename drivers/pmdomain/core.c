@@ -1358,7 +1358,8 @@ err_poweroff:
 	return ret;
 }
 
-static bool pd_ignore_unused;
+/* redwood: on by default, like clk_ignore_unused (see drivers/clk/clk.c) */
+static bool pd_ignore_unused = true;
 static int __init pd_ignore_unused_setup(char *__unused)
 {
 	pd_ignore_unused = true;

@@ -361,6 +361,12 @@ static int get_v4l2_plane32(struct v4l2_plane *p64,
 		.m		= m,
 		.data_offset	= plane32.data_offset,
 	};
+	/*
+	 * msm_vidc passes each plane's dma-buf fd and offsets in reserved[],
+	 * so 32-bit video userspace (the Codec2 HAL) needs them copied, as
+	 * the Qualcomm 5.4 kernel did.
+	 */
+	memcpy(p64->reserved, plane32.reserved, sizeof(p64->reserved));
 
 	return 0;
 }
@@ -377,6 +383,7 @@ static int put_v4l2_plane32(struct v4l2_plane *p64,
 		.length		= p64->length,
 		.data_offset	= p64->data_offset,
 	};
+	memcpy(plane32.reserved, p64->reserved, sizeof(plane32.reserved));
 
 	switch (memory) {
 	case V4L2_MEMORY_MMAP:
