@@ -1788,6 +1788,7 @@ static void arm_smmu_destroy_domain_context(struct arm_smmu_domain *smmu_domain)
 
 static struct iommu_domain *arm_smmu_domain_alloc_paging(struct device *dev)
 {
+	struct arm_smmu_master_cfg *cfg = dev_iommu_priv_get(dev);
 	struct arm_smmu_domain *smmu_domain;
 
 	/*
@@ -1804,6 +1805,13 @@ static struct iommu_domain *arm_smmu_domain_alloc_paging(struct device *dev)
 	spin_lock_init(&smmu_domain->sync_lock);
 	spin_lock_init(&smmu_domain->iotlb_gather_lock);
 	smmu_domain->secure_vmid = VMID_INVAL;
+	/*
+	 * 6.18 needs the page sizes on the domain from the start; the core
+	 * refuses to set up the default DMA domain of a device without them.
+	 * The context bank setup narrows them to the page table format later.
+	 */
+	if (cfg && cfg->smmu)
+		smmu_domain->domain.pgsize_bitmap = cfg->smmu->pgsize_bitmap;
 
 	return &smmu_domain->domain;
 }
@@ -2958,7 +2966,13 @@ static void arm_smmu_get_resv_regions(struct device *dev,
 
 	list_add_tail(&region->list, head);
 
-	iommu_dma_get_resv_regions(dev, head);
+	/*
+	 * Bring-up: 6.18's of_iommu_get_resv_regions() oopses on redwood's
+	 * device tree while the SMMU registers. Skip the device tree reserved
+	 * regions until that is understood; only the splash handover needs them.
+	 */
+	if (!IS_ENABLED(CONFIG_REDWOOD_SPLASHCON))
+		iommu_dma_get_resv_regions(dev, head);
 }
 
 static int arm_smmu_def_domain_type(struct device *dev)
