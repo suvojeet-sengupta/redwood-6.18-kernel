@@ -1,8 +1,15 @@
-# SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for the Linux kernel EDAC drivers.
+#
+# Copyright 02 Jul 2003, Linux Networx (http://lnxi.com)
+# This file may be distributed under the terms of the
+# GNU General Public License.
+#
 
-ccflags-y += -I$(src)
+obj-$(CONFIG_EDAC)			:= edac_core.o
 
-obj-$(CONFIG_EDAC_QCOM) += qcom_edac.o
+edac_core-y	:= edac_mc.o edac_device.o edac_mc_sysfs.o
+edac_core-y	+= edac_module.o edac_device_sysfs.o wq.o
 
 edac_core-$(CONFIG_EDAC_DEBUG)		+= debugfs.o
 edac_core-$(CONFIG_EDAC_SCRUB)		+= scrub.o
@@ -83,5 +90,7 @@ obj-$(CONFIG_EDAC_VERSAL)		+= versal_edac.o
 obj-$(CONFIG_EDAC_LOONGSON)		+= loongson_edac.o
 obj-$(CONFIG_EDAC_VERSALNET)		+= versalnet_edac.o
 obj-$(CONFIG_EDAC_CORTEX_A72)		+= a72_edac.o
-obj-$(CONFIG_EDAC_KRYO_ARM64) += kryo_arm64_edac.o
 
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_EDAC_KRYO_ARM64) += kryo_arm64_edac.o

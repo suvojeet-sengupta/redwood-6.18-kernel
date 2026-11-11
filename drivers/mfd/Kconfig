@@ -406,6 +406,17 @@ config MFD_CS47L92
 	help
 	  Support for Cirrus Logic CS42L92, CS47L92 and CS47L93 Smart Codecs
 
+config MFD_TN48M_CPLD
+	tristate "Delta Networks TN48M switch CPLD driver"
+	depends on I2C
+	depends on ARCH_MVEBU || COMPILE_TEST
+	select MFD_SIMPLE_MFD_I2C
+	help
+	  Select this option to enable support for Delta Networks TN48M switch
+	  CPLD. It consists of reset and GPIO drivers. CPLD provides GPIOS-s
+	  for the SFP slots as well as power supply related information.
+	  SFP support depends on the GPIO driver being selected.
+
 config PMIC_DA903X
 	bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
 	depends on I2C=y
@@ -1240,17 +1251,6 @@ config MFD_PM8XXX
 	  Say M here if you want to include support for PM8xxx chips as a
 	  module. This will build a module called "pm8xxx-core".
 
-config MFD_I2C_PMIC
-	tristate "QTI I2C PMIC support"
-	depends on I2C && OF
-	select IRQ_DOMAIN
-	select REGMAP_I2C
-	help
-	  This enables support for controlling Qualcomm Technologies, Inc.
-	  PMICs over I2C. The driver controls interrupts, and provides register
-	  access for all of the device's peripherals.  Some QTI PMIC chips
-	  support communication over both I2C and SPMI.
-
 config MFD_QCOM_RPM
 	tristate "Qualcomm Resource Power Manager (RPM)"
 	depends on ARCH_QCOM && OF
@@ -1264,6 +1264,19 @@ config MFD_QCOM_RPM
 
 	  Say M here if you want to include support for the Qualcomm RPM as a
 	  module. This will build a module called "qcom_rpm".
+
+config MFD_SPACEMIT_P1
+	tristate "SpacemiT P1 PMIC"
+	depends on ARCH_SPACEMIT || COMPILE_TEST
+	depends on I2C
+	select I2C_K1
+	select MFD_SIMPLE_MFD_I2C
+	help
+	  This option supports the I2C-based SpacemiT P1 PMIC, which
+	  contains regulators, a power switch, GPIOs, an RTC, and more.
+	  This option is selected when any of the supported sub-devices
+	  is configured.  The basic functionality is implemented by the
+	  simple MFD I2C driver.
 
 config MFD_SPMI_PMIC
 	tristate "Qualcomm SPMI PMICs"
@@ -2559,4 +2572,48 @@ config MFD_MAX7360
 	  of the device.
 
 endmenu
+
+# Qualcomm (from 6.12 soc-repo)
+config MFD_PCF50633
+	tristate "NXP PCF50633"
+	depends on I2C
+	select REGMAP_I2C
+	help
+	  Say yes here if you have NXP PCF50633 chip on your board.
+	  This core driver provides register access and IRQ handling
+	  facilities, and registers devices for the various functions
+	  so that function-specific drivers can bind to them.
+
+config PCF50633_ADC
+	tristate "NXP PCF50633 ADC"
+	depends on MFD_PCF50633
+	help
+	  Say yes here if you want to include support for ADC in the
+	  NXP PCF50633 chip.
+
+config PCF50633_GPIO
+	tristate "NXP PCF50633 GPIO"
+	depends on MFD_PCF50633
+	help
+	  Say yes here if you want to include support GPIO for pins on
+	  the PCF50633 chip.
+
+config MFD_I2C_PMIC
+	tristate "QTI I2C PMIC support"
+	depends on I2C && OF
+	select IRQ_DOMAIN
+	select REGMAP_I2C
+	help
+	  This enables support for controlling Qualcomm Technologies, Inc.
+	  PMICs over I2C. The driver controls interrupts, and provides register
+	  access for all of the device's peripherals.  Some QTI PMIC chips
+	  support communication over both I2C and SPMI.
+
+config MFD_STA2X11
+	bool "STMicroelectronics STA2X11"
+	depends on STA2X11
+	select MFD_CORE
+	select REGMAP_MMIO
+
+
 endif

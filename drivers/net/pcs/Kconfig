@@ -34,6 +34,8 @@ config PCS_RZN1_MIIC
 	  Renesas RZ/N1, RZ/N2H, and RZ/T2H SoCs. This PCS converts MII to
 	  RMII/RGMII, or can be set in pass-through mode for MII.
 
+
+# Qualcomm (from 6.12 soc-repo)
 config PCS_QCOM
 	tristate "Qualcomm Technologies, Inc. XPCS controller"
 	select PHYLINK
@@ -43,5 +45,6 @@ config PCS_QCOM
 	  SGMII and USXGMII PHY interfaces. It supports SGMII-plus as well,
 	  for 2.5Gbps Full Duplex mode. It's role is to support Clause 37
 	  Autonegotiation and EEE for STMMAC Ethernet controllers.
+
 
 endmenu

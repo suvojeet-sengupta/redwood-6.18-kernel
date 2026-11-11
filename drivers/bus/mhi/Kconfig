@@ -5,5 +5,9 @@
 # Copyright (c) 2021, Linaro Ltd.
 #
 
-source "$(KCONFIG_EXT_PREFIX)drivers/bus/mhi/host/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/bus/mhi/devices/Kconfig"
+source "drivers/bus/mhi/host/Kconfig"
+source "drivers/bus/mhi/ep/Kconfig"
+
+# Qualcomm (from 6.12 soc-repo)
+source "drivers/bus/mhi/devices/Kconfig"
+

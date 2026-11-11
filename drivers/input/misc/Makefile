@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for the input misc drivers.
+#
 
-ccflags-y += -I$(src)
-
-obj-$(CONFIG_INPUT_PM8941_PWRKEY) += pm8941-pwrkey.o
-
-obj-$(CONFIG_INPUT_QCOM_HV_HAPTICS) += qcom-hv-haptics.o
+# Each configuration option enables a list of files.
 
 obj-$(CONFIG_INPUT_88PM860X_ONKEY)	+= 88pm860x_onkey.o
 obj-$(CONFIG_INPUT_88PM80X_ONKEY)	+= 88pm80x_onkey.o
@@ -96,3 +95,7 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
 obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
 obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
 obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_INPUT_QCOM_HV_HAPTICS) += qcom-hv-haptics.o

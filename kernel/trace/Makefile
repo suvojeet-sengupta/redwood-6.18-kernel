@@ -111,3 +111,8 @@ obj-$(CONFIG_TRACEPOINT_BENCHMARK) += trace_benchmark.o
 obj-$(CONFIG_RV) += rv/
 
 libftrace-y := ftrace.o
+
+# Qualcomm (from 6.12 soc-repo)
+obj-$(CONFIG_IPC_LOGGING) += qcom_ipc_logging.o
+qcom_ipc_logging-objs += ipc_logging.o ipc_logging_debug.o
+qcom_ipc_logging-$(CONFIG_IPC_LOGGING_CDEV) += ipc_logging_cdev.o

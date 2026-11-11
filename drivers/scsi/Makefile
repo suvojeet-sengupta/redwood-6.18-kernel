@@ -1,8 +1,21 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for linux/drivers/scsi
+#
+# 30 May 2000, Christoph Hellwig <hch@infradead.org>
+# Rewritten to use lists instead of if-statements.
+#
+# 20 Sep 2000, Torben Mathiasen <tmm@image.dk>
+# Changed link order to reflect new scsi initialization.
+#
+# *!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!
+# The link order must be, SCSI Core, SCSI HBA drivers, and
+# lastly SCSI peripheral drivers (disk/tape/cdrom/etc.) to
+# satisfy certain initialization assumptions in the SCSI layer.
+# *!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!
 
-ccflags-y += -I$(src)
 
-obj-$(CONFIG_CHR_DEV_SG) += sg.o
+CFLAGS_aha152x.o =   -DAHA152X_STAT -DAUTOCONF
 
 obj-$(CONFIG_PCMCIA)		+= pcmcia/
 
@@ -193,3 +206,6 @@ $(obj)/53c700_d.h: $(src)/53c700.scr $(src)/script_asm.pl
 	$(PERL) -s $(src)/script_asm.pl -ncr7x0_family $@ $(@:_d.h=_u.h) < $<
 
 endif
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)

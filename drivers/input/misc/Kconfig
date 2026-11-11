@@ -2,6 +2,15 @@
 #
 # Input misc drivers configuration
 #
+menuconfig INPUT_MISC
+	bool "Miscellaneous devices"
+	help
+	  Say Y here, and a list of miscellaneous input drivers will be displayed.
+	  Everything that didn't fit into the other categories is here. This option
+	  doesn't affect the kernel.
+
+	  If unsure, say Y.
+
 if INPUT_MISC
 
 config INPUT_88PM860X_ONKEY
@@ -975,6 +984,16 @@ config INPUT_RT5120_PWRKEY
 config INPUT_STPMIC1_ONKEY
 	tristate "STPMIC1 PMIC Onkey support"
 	depends on MFD_STPMIC1
+	help
+	  Say Y to enable support of onkey embedded into STPMIC1 PMIC. onkey
+	  can be used to wakeup from low power modes and force a shut-down on
+	  long press.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called stpmic1_onkey.
+
+
+# Qualcomm (from 6.12 soc-repo)
 config INPUT_QCOM_HV_HAPTICS
 	tristate "QTI High Voltage Haptics support"
 	depends on MFD_SPMI_PMIC
@@ -985,5 +1004,6 @@ config INPUT_QCOM_HV_HAPTICS
 	  drive voltage up to 10 V, and its 5 integrated pattern sources can be used
 	  for playing different vibration effects. To compile this driver as a module,
 	  choose M here: the module will be called qcom-hv-haptics.
+
 
 endif

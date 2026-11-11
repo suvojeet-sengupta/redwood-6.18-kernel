@@ -1247,6 +1247,17 @@ config PALMAS_GPADC
 config QCOM_VADC_COMMON
 	tristate
 
+config QCOM_PM8XXX_XOADC
+	tristate "Qualcomm SSBI PM8xxx PMIC XOADCs"
+	depends on MFD_PM8XXX
+	select QCOM_VADC_COMMON
+	help
+	  ADC driver for the XOADC portions of the Qualcomm PM8xxx PMICs
+	  using SSBI transport: PM8018, PM8038, PM8058, PM8921.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called qcom-pm8xxx-xoadc.
+
 config QCOM_SPMI_RRADC
 	tristate "Qualcomm SPMI RRADC"
 	depends on MFD_SPMI_PMIC
@@ -1259,13 +1270,42 @@ config QCOM_SPMI_RRADC
 	  To compile this driver as a module, choose M here: the module will
 	  be called qcom-qpmi-rradc.
 
-config QCOM_SPMI_ADC5_GEN3
-	tristate "Qualcomm Technologies Inc. SPMI PMIC5 GEN3 ADC"
+config QCOM_SPMI_IADC
+	tristate "Qualcomm SPMI PMIC current ADC"
+	depends on SPMI
+	select REGMAP_SPMI
+	help
+	  This is the IIO Current ADC driver for Qualcomm QPNP IADC Chip.
+
+	  The driver supports single mode operation to read from one of two
+	  channels (external or internal). Hardware have additional
+	  channels internally used for gain and offset calibration.
+
+	  To compile this driver as a module, choose M here: the module will
+	  be called qcom-spmi-iadc.
+
+config QCOM_SPMI_VADC
+	tristate "Qualcomm SPMI PMIC voltage ADC"
 	depends on SPMI
 	select REGMAP_SPMI
 	select QCOM_VADC_COMMON
 	help
-	  This is the IIO Voltage PMIC5 Gen3 ADC driver for Qualcomm Technologies Inc.
+	  This is the IIO Voltage ADC driver for Qualcomm QPNP VADC Chip.
+
+	  The driver supports multiple channels read. The VADC is a 15-bit
+	  sigma-delta ADC. Some of the channels are internally used for
+	  calibration.
+
+	  To compile this driver as a module, choose M here: the module will
+	  be called qcom-spmi-vadc.
+
+config QCOM_SPMI_ADC5
+	tristate "Qualcomm Technologies Inc. SPMI PMIC5 ADC"
+	depends on SPMI
+	select REGMAP_SPMI
+	select QCOM_VADC_COMMON
+	help
+	  This is the IIO Voltage PMIC5 ADC driver for Qualcomm Technologies Inc.
 
 	  The driver supports multiple channels read. The ADC is a 16-bit
 	  sigma-delta ADC. The hardware supports calibrated results for
@@ -1564,23 +1604,15 @@ config TI_ADC128S052
 	help
 	  If you say yes here you get support for Texas Instruments ADC128S052,
 	  ADC122S021, ADC124S021 and ROHM Semiconductor BD79104 chips.
-	  be called qcom-spmi-adc5-gen3.
 
-config QCOM_SPMI_ADC5_GEN3_DEBUG_LOGGING
-	bool "ADC5 GEN3 Debug Logging"
-	depends on QCOM_SPMI_ADC5_GEN3
-	help
-	  Say yes here to enable debug logging for Qualcomm Technologies, Inc.
-	  ADC5 Gen3 driver.
+	  This driver can also be built as a module. If so, the module will be
+	  called ti-adc128s052.
 
-	  This should be enabled when ADC timeout or ADC conversion faults are
-	  seen and need to be debugged. It will support dumping ADC registers
-	  when these issues occur and then will trigger kernel panic to get the
-	  context of the issue.
-
-config QTI_GLINK_ADC
-	tristate "Qualcomm Technologies Inc. PMIC Glink ADC"
-	depends on QTI_PMIC_GLINK
+config TI_ADC161S626
+	tristate "Texas Instruments ADC161S626 1-channel differential ADC"
+	depends on SPI
+	select IIO_BUFFER
+	select IIO_TRIGGERED_BUFFER
 	help
 	  If you say yes here you get support for Texas Instruments ADC141S626,
 	  and ADC161S626 chips.
@@ -1842,29 +1874,50 @@ config XILINX_AMS
 
 	  The driver can also be built as a module. If so, the module will be called
 	  xilinx-ams.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config QCOM_SPMI_ADC5_GEN3
+	tristate "Qualcomm Technologies Inc. SPMI PMIC5 GEN3 ADC"
+	depends on SPMI
+	select REGMAP_SPMI
+	select QCOM_VADC_COMMON
+	help
+	  This is the IIO Voltage PMIC5 Gen3 ADC driver for Qualcomm Technologies Inc.
+
+	  The driver supports multiple channels read. The ADC is a 16-bit
+	  sigma-delta ADC. The hardware supports calibrated results for
+	  conversion requests and clients include reading voltage phone
+	  power, on board system thermistors connected to the PMIC ADC,
+	  PMIC die temperature, charger temperature, battery current, USB voltage
+	  input, voltage signals connected to supported PMIC GPIO inputs. The
+	  hardware supports internal pull-up for thermistors and can choose between
+	  a 100k, 30k and 400k pull up using the ADC channels.
+
+	  To compile this driver as a module, choose M here: the module will
+	  be called qcom-spmi-adc5-gen3.
+
+config QCOM_SPMI_ADC5_GEN3_DEBUG_LOGGING
+	bool "ADC5 GEN3 Debug Logging"
+	depends on QCOM_SPMI_ADC5_GEN3
+	help
+	  Say yes here to enable debug logging for Qualcomm Technologies, Inc.
+	  ADC5 Gen3 driver.
+
+	  This should be enabled when ADC timeout or ADC conversion faults are
+	  seen and need to be debugged. It will support dumping ADC registers
+	  when these issues occur and then will trigger kernel panic to get the
+	  context of the issue.
+
+config QTI_GLINK_ADC
+	tristate "Qualcomm Technologies Inc. PMIC Glink ADC"
+	depends on QTI_PMIC_GLINK
+	help
 	  This is the IIO PMIC Glink ADC driver for Qualcomm Technologies, Inc.
 	  PMICs.  It supports reading multiple ADC channels using the Glink
 	  interface to communicate with charger firmware.  Channel value
 	  conversion is performed in firmware.  Both converted and raw values
 	  can be read.
 
-config QCOM_SPMI_ADC5
-        tristate "Qualcomm Technologies Inc. SPMI PMIC5 ADC"
-        depends on SPMI
-        select REGMAP_SPMI
-        select QCOM_VADC_COMMON
-        help
-          This is the IIO Voltage PMIC5 ADC driver for Qualcomm Technologies Inc.
 
-          The driver supports multiple channels read. The ADC is a 16-bit
-          sigma-delta ADC. The hardware supports calibrated results for
-          conversion requests and clients include reading voltage phone
-          power, on board system thermistors connected to the PMIC ADC,
-          PMIC die temperature, charger temperature, battery current, USB voltage
-          input, voltage signals connected to supported PMIC GPIO inputs. The
-          hardware supports internal pull-up for thermistors and can choose between
-          a 100k, 30k and 400k pull up using the ADC channels.
-
-          To compile this driver as a module, choose M here: the module will
-          be called qcom-spmi-adc5.
 endmenu

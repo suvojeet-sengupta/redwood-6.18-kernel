@@ -1013,34 +1013,42 @@ config I2C_PCA_PLATFORM
 config I2C_PNX
 	tristate "I2C bus support for Philips PNX and NXP LPC targets"
 	depends on ARCH_LPC32XX || COMPILE_TEST
-comment "I2C system bus drivers (mostly embedded / system-on-chip)"
-
-config I2C_MSM_GENI
-	tristate "Qualcomm Technologies Inc.'s GENI based I2C controller"
-	depends on ARCH_QCOM || COMPILE_TEST
-	depends on QCOM_GENI_SE
-	default n
 	help
-	  This driver supports GENI serial engine based I2C controller in
-	  master mode on the Qualcomm Technologies Inc.'s SoCs. If you say
-	  yes to this option, support will be included for the built-in I2C
-	  interface on the Qualcomm Technologies Inc.'s SoCs.
+	  This driver supports the Philips IP3204 I2C IP block master and/or
+	  slave controller
 
 	  This driver can also be built as a module.  If so, the module
-	  will be called i2c-msm-geni.
+	  will be called i2c-pnx.
 
-config I2C_QCOM_GENI_MSM
-	tristate "Qualcomm Technologies Inc.'s GENI based I2C controller with SCMI"
-	depends on ARCH_QCOM || COMPILE_TEST
-	depends on QCOM_GENI_SE_MSM
+config I2C_PXA
+	tristate "Intel PXA2XX I2C adapter"
+	depends on ARCH_PXA || ARCH_MMP || ARCH_MVEBU || (X86_32 && PCI && OF) || COMPILE_TEST
 	help
-	  This driver supports GENI serial engine based I2C controller in
-	  master mode on the Qualcomm Technologies Inc.'s SCMI support SoC. If you say
-	  yes to this option, support will be included for the built-in I2C
-	  interface on the Qualcomm Technologies Inc.'s SCMI support SoCs.
+	  If you have devices in the PXA I2C bus, say yes to this option.
+	  This driver can also be built as a module.  If so, the module
+	  will be called i2c-pxa.
+
+config I2C_PXA_PCI
+	def_bool I2C_PXA && X86_32 && PCI && OF
+
+config I2C_PXA_SLAVE
+	bool "Intel PXA2XX I2C Slave comms support"
+	depends on I2C_PXA && !X86_32
+	select I2C_SLAVE
+	help
+	  Support I2C slave mode communications on the PXA I2C bus.  This
+	  is necessary for systems where the PXA may be a target on the
+	  I2C bus.
+
+config I2C_QCOM_CCI
+	tristate "Qualcomm Camera Control Interface"
+	depends on ARCH_QCOM || COMPILE_TEST
+	help
+	  If you say yes to this option, support will be included for the
+	  built-in camera control interface on the Qualcomm SoCs.
 
 	  This driver can also be built as a module.  If so, the module
-	  will be called i2c-geni-msm.
+	  will be called i2c-qcom-cci.
 
 config I2C_QCOM_GENI
 	tristate "Qualcomm Technologies Inc.'s GENI based I2C controller"
@@ -1587,5 +1595,35 @@ config I2C_VIRTIO
 
           This driver can also be built as a module. If so, the module
           will be called i2c-virtio.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config I2C_MSM_GENI
+	tristate "Qualcomm Technologies Inc.'s GENI based I2C controller"
+	depends on ARCH_QCOM || COMPILE_TEST
+	depends on QCOM_GENI_SE
+	default n
+	help
+	  This driver supports GENI serial engine based I2C controller in
+	  master mode on the Qualcomm Technologies Inc.'s SoCs. If you say
+	  yes to this option, support will be included for the built-in I2C
+	  interface on the Qualcomm Technologies Inc.'s SoCs.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called i2c-msm-geni.
+
+config I2C_QCOM_GENI_MSM
+	tristate "Qualcomm Technologies Inc.'s GENI based I2C controller with SCMI"
+	depends on ARCH_QCOM || COMPILE_TEST
+	depends on QCOM_GENI_SE_MSM
+	help
+	  This driver supports GENI serial engine based I2C controller in
+	  master mode on the Qualcomm Technologies Inc.'s SCMI support SoC. If you say
+	  yes to this option, support will be included for the built-in I2C
+	  interface on the Qualcomm Technologies Inc.'s SCMI support SoCs.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called i2c-geni-msm.
+
 
 endmenu

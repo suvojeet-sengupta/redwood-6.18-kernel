@@ -14,6 +14,29 @@ config QRTR
 
 if QRTR
 
+config QRTR_SMD
+	tristate "SMD IPC Router channels"
+	depends on RPMSG || (COMPILE_TEST && RPMSG=n)
+	help
+	  Say Y here to support SMD based ipcrouter channels.  SMD is the
+	  most common transport for IPC Router.
+
+config QRTR_TUN
+	tristate "TUN device for Qualcomm IPC Router"
+	help
+	  Say Y here to expose a character device that allows user space to
+	  implement endpoints of QRTR, for purpose of tunneling data to other
+	  hosts or testing purposes.
+
+config QRTR_MHI
+	tristate "MHI IPC Router channels"
+	depends on MHI_BUS
+	help
+	  Say Y here to support MHI based ipcrouter channels. MHI is the
+	  transport used for communicating to external modems.
+
+
+# Qualcomm (from 6.12 soc-repo)
 config QRTR_NODE_ID
 	int "QRTR Local Node ID"
 	default 1
@@ -35,27 +58,6 @@ config QRTR_WAKEUP_MS
 	  client process will get time to run if auto sleep is enabled. This
 	  config will help mitigate missed packets on systems where auto sleep
 	  is aggressive.
-
-config QRTR_SMD
-	tristate "SMD IPC Router channels"
-	depends on RPMSG || (COMPILE_TEST && RPMSG=n)
-	help
-	  Say Y here to support SMD based ipcrouter channels.  SMD is the
-	  most common transport for IPC Router.
-
-config QRTR_TUN
-	tristate "TUN device for Qualcomm IPC Router"
-	help
-	  Say Y here to expose a character device that allows user space to
-	  implement endpoints of QRTR, for purpose of tunneling data to other
-	  hosts or testing purposes.
-
-config QRTR_MHI
-	tristate "MHI IPC Router channels"
-	depends on MHI_BUS
-	help
-	  Say Y here to support MHI based ipcrouter channels. MHI is the
-	  transport used for communicating to external modems.
 
 config QRTR_MHI_SUSPEND
 	tristate "Enable QRTR MHI Suspend feature"
@@ -82,5 +84,6 @@ config QRTR_GENPOOL
 	  communication between two endpoints. The transport utilizes a reserved
 	  memory created and owned by another device, which is shared through
 	  the genpool framework.
+
 
 endif # QRTR

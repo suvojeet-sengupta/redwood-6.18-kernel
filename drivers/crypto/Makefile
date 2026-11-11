@@ -51,7 +51,5 @@ obj-y += starfive/
 obj-y += cavium/
 obj-y += ti/
 
+# Qualcomm (from 6.12 soc-repo)
 ccflags-y += -I$(src)
-
-obj-$(CONFIG_CRYPTO_DEV_QCOM_RNG) += qcom-rng.o
-

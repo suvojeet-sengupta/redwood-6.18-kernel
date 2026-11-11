@@ -5,8 +5,12 @@
 
 menu "PTP clock support"
 
-config PTP_QCOM_CLOCK_TSC_VM
-	tristate "QCOM TSC virtual PTP clock"
+config PTP_1588_CLOCK
+	tristate "PTP clock support"
+	depends on NET && POSIX_TIMERS
+	default ETHERNET
+	select PPS
+	select NET_PTP_CLASSIFY
 	help
 	  The IEEE 1588 standard defines a method to precisely
 	  synchronize distributed clocks over Ethernet networks. The
@@ -233,11 +237,9 @@ config PTP_DFL_TOD
 	  is exposed as PTP Hardware Clock (PHC) device to the Linux PTP
 	  stack to synchronize the system clock to its ToD information
 	  using phc2sys utility of the Linux PTP stack.
-	  This driver adds support for reading the TSC timestamp using the
-	  PTP clock gettime operation on a virtual machine(VM).
 
 	  To compile this driver as a module, choose M here: the module
-	  will be called ptp_qcom_tsc_vm.
+	  will be called ptp_dfl_tod.
 
 config PTP_S390
 	tristate "S390 PTP driver"
@@ -260,5 +262,17 @@ config PTP_NETC_V4_TIMER
 	  clock, the clock is used by ENETC V4 or NETC V4 Switch for PTP time
 	  synchronization. It also supports periodic output signal (e.g. PPS)
 	  and external trigger timestamping.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config PTP_QCOM_CLOCK_TSC_VM
+	tristate "QCOM TSC virtual PTP clock"
+	help
+	  This driver adds support for reading the TSC timestamp using the
+	  PTP clock gettime operation on a virtual machine(VM).
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called ptp_qcom_tsc_vm.
+
 
 endmenu

@@ -1,10 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 
-ccflags-y += -I$(src)
-
-obj-$(CONFIG_EXTCON_QTI_SPMI_MISC) += extcon-qti-spmi-misc.o
-
-obj-$(CONFIG_EXTCON_USB_GPIO) += extcon-usb-gpio.o
+# Makefile for external connector class (extcon) devices
+#
 
 obj-$(CONFIG_EXTCON)		+= extcon-core.o
 extcon-core-objs		+= extcon.o devres.o
@@ -31,3 +28,7 @@ obj-$(CONFIG_EXTCON_USB_GPIO)	+= extcon-usb-gpio.o
 obj-$(CONFIG_EXTCON_USBC_CROS_EC) += extcon-usbc-cros-ec.o
 obj-$(CONFIG_EXTCON_USBC_TUSB320) += extcon-usbc-tusb320.o
 obj-$(CONFIG_EXTCON_RTK_TYPE_C) += extcon-rtk-type-c.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_EXTCON_QTI_SPMI_MISC) += extcon-qti-spmi-misc.o

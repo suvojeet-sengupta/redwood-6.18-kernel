@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
+CFLAGS_trace.o				:= -I$(src)
 
-ccflags-y += -I$(src)
+obj-$(CONFIG_TYPEC_UCSI)		+= typec_ucsi.o
 
-obj-$(CONFIG_UCSI_QTI_GLINK) += ucsi_qti_glink.o
+typec_ucsi-y				:= ucsi.o
 
 typec_ucsi-$(CONFIG_DEBUG_FS)		+= debugfs.o
 
@@ -27,3 +28,7 @@ obj-$(CONFIG_UCSI_PMIC_GLINK)		+= ucsi_glink.o
 obj-$(CONFIG_CROS_EC_UCSI)		+= cros_ec_ucsi.o
 obj-$(CONFIG_UCSI_LENOVO_YOGA_C630)	+= ucsi_yoga_c630.o
 obj-$(CONFIG_UCSI_HUAWEI_GAOKUN)	+= ucsi_huawei_gaokun.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_UCSI_QTI_GLINK) += ucsi_qti_glink.o

@@ -120,6 +120,11 @@ config VIRTIO_BALLOON
 
 	 If unsure, say M.
 
+config VIRTIO_BALLOON_HYP_OPS
+	def_bool y
+	depends on VIRTIO_BALLOON
+	depends on ARCH_HAS_VIRTIO_BALLOON_HYP_OPS
+
 config VIRTIO_MEM
 	tristate "Virtio mem driver"
 	depends on X86_64 || ARM64 || RISCV || S390
@@ -160,27 +165,6 @@ config VIRTIO_MMIO
 
  	 If unsure, say N.
 
-config VIRTIO_MMIO_SWIOTLB
-	bool "Instantiate swiotlb buffer pool for custom DMA ops"
-	depends on VIRTIO_MMIO
-	help
-	  Activating this feature results in custom DMA ops being
-	  setup up for virtio_mmio device, that uses swiotlb driver
-	  APIs to bounce buffers in and out of a pre-defined memory
-	  region. The pre-defined memory region is defined in
-	  device-tree (/swiotlb) and is indicative of memory that is
-	  shared with another virtual machine which is hosting virtio
-	  backend drivers.
-
-config GH_VIRTIO_DEBUG
-	bool "Enable debug features for virtio front-end drivers on Gunyah Hypervisor"
-	depends on VIRTIO_MMIO
-	help
-	  Activating this feature provides additional tracepoints in various
-	  virtio drivers that will be useful to debug virtio transactions.
-	  Currently virtio block driver and mmio transport provide few
-	  tracepoints when this feature is enabled.
-
 config VIRTIO_MMIO_CMDLINE_DEVICES
 	bool "Memory mapped virtio devices parameter parsing"
 	depends on VIRTIO_MMIO
@@ -199,14 +183,15 @@ config VIRTIO_DMA_SHARED_BUFFER
 	 This option adds a flavor of dma buffers that are backed by
 	 virtio resources.
 
-config VIRTIO_MMIO_POLL_RESET
-	bool "Virti-mmio device synchronous reset support"
-	depends on VIRTIO_MMIO
+config VIRTIO_DEBUG
+	bool "Debug facilities"
+	depends on VIRTIO
 	help
-	  Say y here to enable synchronous reset for the MMIO transport based
-	  virtio device. After writing 0 to device_status, the driver must
-	  wait for a read of device_status to return 0 before reinitializing
-	  the device.
+	  Enable this to expose debug facilities over debugfs.
+	  This allows to debug features, to see what features the device
+	  advertises and to set filter for features used by driver.
+
+	  If unsure, say N.
 
 config VIRTIO_RTC
 	tristate "Virtio RTC driver"
@@ -271,5 +256,38 @@ config VIRTIO_RTC_CLASS
 	 If unsure, say Y.
 
 endif # VIRTIO_RTC
+
+
+# Qualcomm (from 6.12 soc-repo)
+config VIRTIO_MMIO_SWIOTLB
+	bool "Instantiate swiotlb buffer pool for custom DMA ops"
+	depends on VIRTIO_MMIO
+	help
+	  Activating this feature results in custom DMA ops being
+	  setup up for virtio_mmio device, that uses swiotlb driver
+	  APIs to bounce buffers in and out of a pre-defined memory
+	  region. The pre-defined memory region is defined in
+	  device-tree (/swiotlb) and is indicative of memory that is
+	  shared with another virtual machine which is hosting virtio
+	  backend drivers.
+
+config GH_VIRTIO_DEBUG
+	bool "Enable debug features for virtio front-end drivers on Gunyah Hypervisor"
+	depends on VIRTIO_MMIO
+	help
+	  Activating this feature provides additional tracepoints in various
+	  virtio drivers that will be useful to debug virtio transactions.
+	  Currently virtio block driver and mmio transport provide few
+	  tracepoints when this feature is enabled.
+
+config VIRTIO_MMIO_POLL_RESET
+	bool "Virti-mmio device synchronous reset support"
+	depends on VIRTIO_MMIO
+	help
+	  Say y here to enable synchronous reset for the MMIO transport based
+	  virtio device. After writing 0 to device_status, the driver must
+	  wait for a read of device_status to return 0 before reinitializing
+	  the device.
+
 
 endif # VIRTIO_MENU

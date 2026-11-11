@@ -1,5 +1,30 @@
 # SPDX-License-Identifier: GPL-2.0
 
+config TYPEC_UCSI
+	tristate "USB Type-C Connector System Software Interface driver"
+	depends on !CPU_BIG_ENDIAN
+	depends on USB_ROLE_SWITCH || !USB_ROLE_SWITCH
+	select USB_COMMON if DEBUG_FS
+	help
+	  USB Type-C Connector System Software Interface (UCSI) is a
+	  specification for an interface that allows the operating system to
+	  control the USB Type-C ports. On UCSI system the USB Type-C ports
+	  function autonomously by default, but in order to get the status of
+	  the ports and support basic operations like role swapping, the driver
+	  is required. UCSI is available on most of the new Intel based systems
+	  that are equipped with Embedded Controller and USB Type-C ports.
+
+	  UCSI specification does not define the interface method, so depending
+	  on the platform, ACPI, PCI, I2C, etc. may be used. Therefore this
+	  driver only provides the core part, and separate drivers are needed
+	  for every supported interface method.
+
+	  The UCSI specification can be downloaded from:
+	  https://www.intel.com/content/www/us/en/io/universal-serial-bus/usb-type-c-ucsi-spec.html
+
+	  To compile the driver as a module, choose M here: the module will be
+	  called typec_ucsi.
+
 if TYPEC_UCSI
 
 config UCSI_CCG
@@ -61,17 +86,11 @@ config UCSI_LENOVO_YOGA_C630
 	depends on EC_LENOVO_YOGA_C630
 	depends on DRM || !DRM
 	select DRM_AUX_HPD_BRIDGE if DRM_BRIDGE && OF
-config UCSI_QTI_GLINK
-	tristate "UCSI Interface Driver for QTI PMIC"
-	depends on QTI_PMIC_GLINK
 	help
-	  This driver enables UCSI support on Qualcomm Technologies, Inc.
-	  platforms that expose UCSI interface to communicate with PPM which is
-	  charger firmware running on the remote subsystem (e.g. DSP) over PMIC
-	  Glink.
+	  This driver enables UCSI support on the Lenovo Yoga C630 laptop.
 
 	  To compile the driver as a module, choose M here: the module will be
-	  called ucsi_qti_glink.
+	  called ucsi_yoga_c630.
 
 config UCSI_HUAWEI_GAOKUN
 	tristate "UCSI Interface Driver for Huawei Matebook E Go"
@@ -84,5 +103,20 @@ config UCSI_HUAWEI_GAOKUN
 
 	  To compile the driver as a module, choose M here: the module will be
 	  called ucsi_huawei_gaokun.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config UCSI_QTI_GLINK
+	tristate "UCSI Interface Driver for QTI PMIC"
+	depends on QTI_PMIC_GLINK
+	help
+	  This driver enables UCSI support on Qualcomm Technologies, Inc.
+	  platforms that expose UCSI interface to communicate with PPM which is
+	  charger firmware running on the remote subsystem (e.g. DSP) over PMIC
+	  Glink.
+
+	  To compile the driver as a module, choose M here: the module will be
+	  called ucsi_qti_glink.
+
 
 endif

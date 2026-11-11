@@ -1,4 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0-only
+menuconfig POWER_RESET
+	bool "Board level reset or power off"
+	help
+	  Provides a number of drivers which either reset a complete board
+	  or shut it down, by manipulating the main power supply on the board.
+
+	  Say Y here to enable board reset and power off
+
 if POWER_RESET
 
 config POWER_RESET_AS3722
@@ -134,24 +142,6 @@ config POWER_RESET_MSM
 	depends on ARCH_QCOM
 	help
 	  Power off and restart support for Qualcomm boards.
-config POWER_RESET_QCOM_DOWNLOAD_MODE
-        tristate "MSM download mode driver"
-        depends on ARCH_QCOM
-        help
-          MSM boards support booting to special download modes after a restart.
-          These modes could be a normal restart, restarting into a
-          ramdump collection mode (CrashDump), or restarting into "emergency
-          download mode".
-
-config POWER_RESET_QCOM_DOWNLOAD_MODE_DEFAULT
-        bool "MSM download mode enabled by default"
-        help
-          A device with "download mode" enabled will upon an unexpected
-          warm-restart enter a special debug mode that allows the user to
-          "download" memory content over USB for offline postmortem analysis.
-          The feature can be enabled/disabled on the kernel command line.
-
-          Say Y here to enable "download mode" by default.
 
 config POWER_RESET_QCOM_PON
 	tristate "Qualcomm power-on driver"
@@ -315,6 +305,67 @@ config POWER_RESET_RMOBILE
 	depends on HAS_IOMEM
 	help
 	  Reboot support for Renesas R-Mobile and SH-Mobile SoCs.
+
+config REBOOT_MODE
+	tristate
+
+config SYSCON_REBOOT_MODE
+	tristate "Generic SYSCON regmap reboot mode driver"
+	depends on OF
+	depends on MFD_SYSCON
+	select REBOOT_MODE
+	help
+	  Say y here will enable reboot mode driver. This will
+	  get reboot mode arguments and store it in SYSCON mapped
+	  register, then the bootloader can read it to take different
+	  action according to the mode.
+
+config POWER_RESET_SC27XX
+	tristate "Spreadtrum SC27xx PMIC power-off driver"
+	depends on MFD_SC27XX_PMIC || COMPILE_TEST
+	help
+	  This driver supports powering off a system through
+	  Spreadtrum SC27xx series PMICs. The SC27xx series
+	  PMICs includes the SC2720, SC2721, SC2723, SC2730
+	  and SC2731 chips.
+
+config NVMEM_REBOOT_MODE
+	tristate "Generic NVMEM reboot mode driver"
+	depends on OF
+	select REBOOT_MODE
+	help
+	  Say y here will enable reboot mode driver. This will
+	  get reboot mode arguments and store it in a NVMEM cell,
+	  then the bootloader can read it and take different
+	  action according to the mode.
+
+config POWER_MLXBF
+	tristate "Mellanox BlueField power handling driver"
+	depends on (GPIO_MLXBF2 || GPIO_MLXBF3) && ACPI
+	help
+	  This driver supports reset or low power mode handling for Mellanox BlueField.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config POWER_RESET_QCOM_DOWNLOAD_MODE
+        tristate "MSM download mode driver"
+        depends on ARCH_QCOM
+        help
+          MSM boards support booting to special download modes after a restart.
+          These modes could be a normal restart, restarting into a
+          ramdump collection mode (CrashDump), or restarting into "emergency
+          download mode".
+
+config POWER_RESET_QCOM_DOWNLOAD_MODE_DEFAULT
+        bool "MSM download mode enabled by default"
+        help
+          A device with "download mode" enabled will upon an unexpected
+          warm-restart enter a special debug mode that allows the user to
+          "download" memory content over USB for offline postmortem analysis.
+          The feature can be enabled/disabled on the kernel command line.
+
+          Say Y here to enable "download mode" by default.
+
 config POWER_RESET_QCOM_REBOOT_REASON
         tristate "MSM reboot mode driver"
         depends on ARCH_QCOM
@@ -323,9 +374,6 @@ config POWER_RESET_QCOM_REBOOT_REASON
           This feature supports commands such as "reboot bootloader"
           to boot the MSM board to fastboot mode.
           If unsure, say Y.
-
-config REBOOT_MODE
-	tristate
 
 config POWER_RESET_QCOM
         tristate "Qualcomm MSM power-off driver"
@@ -344,5 +392,6 @@ config POWER_RESET_QCOM_VM
          machine. This driver supports virtual machine power down and restart.
          Say Y here if you have a MSM virtual machine and wish to enable
          restart driver.
+
 
 endif

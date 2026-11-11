@@ -1,7 +1,3 @@
-# SPDX-License-Identifier: GPL-2.0-only
-#
-# For a description of the syntax of this configuration file,
-# see Documentation/kbuild/kconfig-language.rst.
 #
 #	EDAC Kconfig
 #	Copyright (c) 2008 Doug Thompson www.softwarebitmaker.com
@@ -380,8 +376,224 @@ config EDAC_OCTEON_LMC
 	  Support for error detection and correction on the
 	  Cavium Octeon family of SOCs.
 
-menu "Qualcomm edac drivers"
+config EDAC_OCTEON_PCI
+	tristate "Cavium Octeon PCI Controller"
+	depends on PCI && CAVIUM_OCTEON_SOC
+	help
+	  Support for error detection and correction on the
+	  Cavium Octeon family of SOCs.
 
+config EDAC_THUNDERX
+	tristate "Cavium ThunderX EDAC"
+	depends on ARM64
+	depends on PCI
+	help
+	  Support for error detection and correction on the
+	  Cavium ThunderX memory controllers (LMC), Cache
+	  Coherent Processor Interconnect (CCPI) and L2 cache
+	  blocks (TAD, CBC, MCI).
+
+config EDAC_ALTERA
+	bool "Altera SOCFPGA ECC"
+	depends on EDAC=y && ARCH_INTEL_SOCFPGA
+	help
+	  Support for error detection and correction on the
+	  Altera SOCs. This is the global enable for the
+	  various Altera peripherals.
+
+config EDAC_ALTERA_SDRAM
+	bool "Altera SDRAM ECC"
+	depends on EDAC_ALTERA=y
+	help
+	  Support for error detection and correction on the
+	  Altera SDRAM Memory for Altera SoCs. Note that the
+	  preloader must initialize the SDRAM before loading
+	  the kernel.
+
+config EDAC_ALTERA_L2C
+	bool "Altera L2 Cache ECC"
+	depends on EDAC_ALTERA=y && CACHE_L2X0
+	help
+	  Support for error detection and correction on the
+	  Altera L2 cache Memory for Altera SoCs. This option
+	  requires L2 cache.
+
+config EDAC_ALTERA_OCRAM
+	bool "Altera On-Chip RAM ECC"
+	depends on EDAC_ALTERA=y && SRAM && GENERIC_ALLOCATOR
+	help
+	  Support for error detection and correction on the
+	  Altera On-Chip RAM Memory for Altera SoCs.
+
+config EDAC_ALTERA_ETHERNET
+	bool "Altera Ethernet FIFO ECC"
+	depends on EDAC_ALTERA=y
+	help
+	  Support for error detection and correction on the
+	  Altera Ethernet FIFO Memory for Altera SoCs.
+
+config EDAC_ALTERA_NAND
+	bool "Altera NAND FIFO ECC"
+	depends on EDAC_ALTERA=y && MTD_NAND_DENALI
+	help
+	  Support for error detection and correction on the
+	  Altera NAND FIFO Memory for Altera SoCs.
+
+config EDAC_ALTERA_DMA
+	bool "Altera DMA FIFO ECC"
+	depends on EDAC_ALTERA=y && PL330_DMA=y
+	help
+	  Support for error detection and correction on the
+	  Altera DMA FIFO Memory for Altera SoCs.
+
+config EDAC_ALTERA_USB
+	bool "Altera USB FIFO ECC"
+	depends on EDAC_ALTERA=y && USB_DWC2
+	help
+	  Support for error detection and correction on the
+	  Altera USB FIFO Memory for Altera SoCs.
+
+config EDAC_ALTERA_QSPI
+	bool "Altera QSPI FIFO ECC"
+	depends on EDAC_ALTERA=y && SPI_CADENCE_QUADSPI
+	help
+	  Support for error detection and correction on the
+	  Altera QSPI FIFO Memory for Altera SoCs.
+
+config EDAC_ALTERA_SDMMC
+	bool "Altera SDMMC FIFO ECC"
+	depends on EDAC_ALTERA=y && MMC_DW
+	help
+	  Support for error detection and correction on the
+	  Altera SDMMC FIFO Memory for Altera SoCs.
+
+config EDAC_SIFIVE
+	bool "Sifive platform EDAC driver"
+	depends on EDAC=y && SIFIVE_CCACHE
+	help
+	  Support for error detection and correction on the SiFive SoCs.
+
+config EDAC_ARMADA_XP
+	bool "Marvell Armada XP DDR and L2 Cache ECC"
+	depends on MACH_MVEBU_V7
+	help
+	  Support for error correction and detection on the Marvell Aramada XP
+	  DDR RAM and L2 cache controllers.
+
+config EDAC_SYNOPSYS
+	tristate "Synopsys DDR Memory Controller"
+	depends on ARCH_ZYNQ || ARCH_ZYNQMP || ARCH_INTEL_SOCFPGA || ARCH_MXC
+	help
+	  Support for error detection and correction on the Synopsys DDR
+	  memory controller.
+
+config EDAC_XGENE
+	tristate "APM X-Gene SoC"
+	depends on (ARM64 || COMPILE_TEST)
+	help
+	  Support for error detection and correction on the
+	  APM X-Gene family of SOCs.
+
+config EDAC_TI
+	tristate "Texas Instruments DDR3 ECC Controller"
+	depends on ARCH_KEYSTONE || SOC_DRA7XX
+	help
+	  Support for error detection and correction on the TI SoCs.
+
+config EDAC_QCOM
+	tristate "QCOM EDAC Controller"
+	depends on ARCH_QCOM && QCOM_LLCC
+	help
+	  Support for error detection and correction on the
+	  Qualcomm Technologies, Inc. SoCs.
+
+	  This driver reports Single Bit Errors (SBEs) and Double Bit Errors (DBEs).
+	  As of now, it supports error reporting for Last Level Cache Controller (LLCC)
+	  of Tag RAM and Data RAM.
+
+	  For debugging issues having to do with stability and overall system
+	  health, you should probably say 'Y' here.
+
+config EDAC_ASPEED
+	tristate "Aspeed AST BMC SoC"
+	depends on ARCH_ASPEED
+	help
+	  Support for error detection and correction on the Aspeed AST BMC SoC.
+
+	  First, ECC must be configured in the bootloader. Then, this driver
+	  will expose error counters via the EDAC kernel framework.
+
+config EDAC_BLUEFIELD
+	tristate "Mellanox BlueField Memory ECC"
+	depends on ARM64 && ((MELLANOX_PLATFORM && ACPI) || COMPILE_TEST)
+	help
+	  Support for error detection and correction on the
+	  Mellanox BlueField SoCs.
+
+config EDAC_DMC520
+	tristate "ARM DMC-520 ECC"
+	depends on ARM64
+	help
+	  Support for error detection and correction on the
+	  SoCs with ARM DMC-520 DRAM controller.
+
+config EDAC_ZYNQMP
+	tristate "Xilinx ZynqMP OCM Controller"
+	depends on ARCH_ZYNQMP || COMPILE_TEST
+	help
+	  This driver supports error detection and correction for the
+	  Xilinx ZynqMP OCM (On Chip Memory) controller. It can also be
+	  built as a module. In that case it will be called zynqmp_edac.
+
+config EDAC_NPCM
+	tristate "Nuvoton NPCM DDR Memory Controller"
+	depends on (ARCH_NPCM || COMPILE_TEST)
+	help
+	  Support for error detection and correction on the Nuvoton NPCM DDR
+	  memory controller.
+
+	  The memory controller supports single bit error correction, double bit
+	  error detection (in-line ECC in which a section 1/8th of the memory
+	  device used to store data is used for ECC storage).
+
+config EDAC_VERSAL
+	tristate "Xilinx Versal DDR Memory Controller"
+	depends on ARCH_ZYNQMP || COMPILE_TEST
+	help
+	  Support for error detection and correction on the Xilinx Versal DDR
+	  memory controller.
+
+	  Report both single bit errors (CE) and double bit errors (UE).
+	  Support injecting both correctable and uncorrectable errors
+	  for debugging purposes.
+
+config EDAC_LOONGSON
+	tristate "Loongson Memory Controller"
+	depends on LOONGARCH && ACPI
+	help
+	  Support for error detection and correction on the Loongson
+	  family memory controller. This driver reports single bit
+	  errors (CE) only. Loongson-3A5000/3C5000/3D5000/3A6000/3C6000
+	  are compatible.
+
+config EDAC_CORTEX_A72
+	tristate "ARM Cortex A72"
+	depends on ARM64
+	help
+	  Support for L1/L2 cache error detection for ARM Cortex A72 processor.
+	  The detected and reported errors are from reading CPU/L2 memory error
+	  syndrome registers.
+
+config EDAC_VERSALNET
+	tristate "AMD VersalNET DDR Controller"
+	depends on CDX_CONTROLLER && ARCH_ZYNQMP
+	help
+	  Support for single bit error correction, double bit error detection
+	  and other system errors from various IP subsystems like RPU, NOCs,
+	  HNICX, PL on the AMD Versal NET DDR memory controller.
+
+
+# Qualcomm (from 6.12 soc-repo)
 config EDAC_KRYO_ARM64
 	depends on ARM64
 	tristate "ARM KRYO Gold and Silver L1/L2/L3/SCU Caches"
@@ -422,20 +634,6 @@ config EDAC_KRYO_ARM64_PANIC_ON_DE
 	  at voltages or frequencies outside normal specification.
 	  For production builds, you should definitely say 'N' here.
 
-config EDAC_QCOM
-	tristate "QCOM EDAC Controller"
-	depends on ARCH_QCOM && QCOM_LLCC
-	help
-	  Support for error detection and correction on the
-	  Qualcomm Technologies, Inc. SoCs.
-
-	  This driver reports Single Bit Errors (SBEs) and Double Bit Errors (DBEs).
-	  As of now, it supports error reporting for Last Level Cache Controller (LLCC)
-	  of Tag RAM and Data RAM.
-
-	  For debugging issues having to do with stability and overall system
-	  health, you should probably say 'Y' here.
-
 config EDAC_QCOM_LCP
 	bool "QCOM LLCC LCP/SRP DDR DRAM ECC reporting"
 	depends on EDAC_QCOM
@@ -449,33 +647,10 @@ config EDAC_QCOM_LCP
 	  interrupt status and error-count registers and reports correctable
 	  (SB) and uncorrectable (DB) errors via the EDAC subsystem.
 
-config EDAC_LOONGSON
-	tristate "Loongson Memory Controller"
-	depends on LOONGARCH && ACPI
-	help
-	  Support for error detection and correction on the Loongson
-	  family memory controller. This driver reports single bit
-	  errors (CE) only. Loongson-3A5000/3C5000/3D5000/3A6000/3C6000
-	  are compatible.
-
-config EDAC_CORTEX_A72
-	tristate "ARM Cortex A72"
-	depends on ARM64
-	help
-	  Support for L1/L2 cache error detection for ARM Cortex A72 processor.
-	  The detected and reported errors are from reading CPU/L2 memory error
-	  syndrome registers.
-
-config EDAC_VERSALNET
-	tristate "AMD VersalNET DDR Controller"
-	depends on CDX_CONTROLLER && ARCH_ZYNQMP
-	help
-	  Support for single bit error correction, double bit error detection
-	  and other system errors from various IP subsystems like RPU, NOCs,
-	  HNICX, PL on the AMD Versal NET DDR memory controller.
 	  Say Y if your platform wires ddrss_apps_interrupt[1] to the GIC and
 	  populates the second interrupt entry in the LLCC DT node.
 	  Say N to save kernel text and avoid requesting the LCP IRQ on
 	  platforms that do not support LCP/SRP ECC reporting.
 
-endmenu
+
+endif # EDAC

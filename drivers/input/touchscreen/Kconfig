@@ -1,15 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# Input misc drivers configuration
+# Touchscreen driver configuration
 #
+menuconfig INPUT_TOUCHSCREEN
+	bool "Touchscreens"
+	help
+	  Say Y here, and a list of supported touchscreens will be displayed.
+	  This option doesn't affect the kernel.
 
-config TOUCHSCREEN_CAP1296
-        tristate "touch driver for cap1296"
-        help
-          The CAP1296 is a multiple channel capacitive touch
-          sensor controller. It contains six (6) individual capaci-
-          tive touch sensor inputs with programmable sensitivity
-          for use in touch sensor applications.
+	  If unsure, say Y.
 
 if INPUT_TOUCHSCREEN
 
@@ -1424,5 +1423,16 @@ config TOUCHSCREEN_HIMAX_HX83112B
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called himax_hx83112b.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config TOUCHSCREEN_CAP1296
+        tristate "touch driver for cap1296"
+        help
+          The CAP1296 is a multiple channel capacitive touch
+          sensor controller. It contains six (6) individual capaci-
+          tive touch sensor inputs with programmable sensitivity
+          for use in touch sensor applications.
+
 
 endif

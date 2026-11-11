@@ -4,6 +4,7 @@
  *
  * Copyright © 2010  Luca Barbieri
  */
+
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/init.h>

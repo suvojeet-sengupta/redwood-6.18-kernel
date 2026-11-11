@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 if PINCTRL_MSM
 
-config PINCTRL_CANOE
-	tristate "Qualcomm Technologies, Inc. CANOE pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_APQ8064
+	tristate "Qualcomm APQ8064 pin controller driver"
+	depends on ARM || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
 	  Qualcomm TLMM block found in the Qualcomm APQ8064 platform.
@@ -133,30 +133,19 @@ config PINCTRL_MSM8X74
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
 	  Qualcomm TLMM block found in the Qualcomm 8974 platform.
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc CANOE platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
 
-config PINCTRL_ALOR
-	tristate "Qualcomm Technologies, Inc. Alor pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_MSM8909
+	tristate "Qualcomm 8909 pin controller driver"
+	depends on ARM || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc Alor platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
+	  Qualcomm TLMM block found on the Qualcomm MSM8909 platform.
 
-config PINCTRL_CHORA
-	tristate "Qualcomm Technologies, Inc. Chora pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_MSM8916
+	tristate "Qualcomm 8916 pin controller driver"
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc Chora platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
+	  Qualcomm TLMM block found on the Qualcomm 8916 platform.
 
 config PINCTRL_MSM8917
 	tristate "Qualcomm 8917/8937 pin controller driver"
@@ -167,69 +156,53 @@ config PINCTRL_MSM8917
 config PINCTRL_MSM8953
 	tristate "Qualcomm 8953 pin controller driver"
 	depends on ARM64 || COMPILE_TEST
-config PINCTRL_MALABAR
-	tristate "Qualcomm Technologies, Inc. Malabar pin controller driver"
-	depends on GPIOLIB && OF
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc Malabar platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
+	  Qualcomm TLMM block found on the Qualcomm MSM8953 platform.
+	  The Qualcomm APQ8053, SDM450, SDM632 platforms are also
+	  supported by this driver.
 
-config PINCTRL_SUN
-	tristate "Qualcomm Technologies, Inc. SUN pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_MSM8976
+	tristate "Qualcomm 8976 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc SUN platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
+	  Qualcomm TLMM block found on the Qualcomm MSM8976 platform.
+	  The Qualcomm MSM8956, APQ8056, APQ8076 platforms are also
+	  supported by this driver.
 
-config PINCTRL_VIENNA
-	tristate "Qualcomm Technologies, Inc. VIENNA pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_MSM8994
+	tristate "Qualcomm 8994 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc VIENNA platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
+	  Qualcomm TLMM block found in the Qualcomm 8994 platform. The
+	  Qualcomm 8992 platform is also supported by this driver.
 
-config PINCTRL_PINEAPPLE
-	tristate "Qualcomm Technologies, Inc. Pineapple pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_MSM8996
+	tristate "Qualcomm MSM8996 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc PINEAPPLE platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
+	  Qualcomm TLMM block found in the Qualcomm MSM8996 platform.
 
-config PINCTRL_X1E80100
-	tristate "Qualcomm Technologies Inc X1E80100 pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_MSM8998
+	tristate "Qualcomm MSM8998 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc X1E80100 platform.
-	  Say Y here to compile statically, or M here to compile it as a module.
-	  If unsure, say N.
+	  Qualcomm TLMM block found in the Qualcomm MSM8998 platform.
 
-config PINCTRL_YUPIK
-	tristate "Qualcomm Technologies Inc YUPIK pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_QCM2290
+	tristate "Qualcomm QCM2290 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc YUPIK platform.
-	  Say Y here to compile statically, or M here to compile it as a module.
-	  If unsure, say N.
+	  TLMM block found in the Qualcomm QCM2290 platform.
 
-config PINCTRL_LAHAINA
-	tristate "Qualcomm Technologies Inc LAHAINA pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_QCS404
+	tristate "Qualcomm QCS404 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
 	  TLMM block found in the Qualcomm QCS404 platform.
@@ -281,54 +254,80 @@ config PINCTRL_SAR2130P
 config PINCTRL_SC7180
 	tristate "Qualcomm Technologies Inc SC7180 pin controller driver"
 	depends on ARM64 || COMPILE_TEST
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc LAHAINA platform.
-	  Say Y here to compile statically, or M here to compile it as a module.
-	  If unsure, say N.
-
-config PINCTRL_KHAJE
-	tristate "Qualcomm Technologies, Inc KHAJE pin controller driver"
-	depends on GPIOLIB && OF
-	help
-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc KHAJE platform.
-	  Say Y here to compile statically, or M here to compile it as a module.
-	  If unsure, say N.
-
-config PINCTRL_BENGAL
-	tristate "Qualcomm Technologies, Inc BENGAL pin controller driver"
-	depends on GPIOLIB && OF
-	help
-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc BENGAL platform.
-	  Say Y here to compile statically, or M here to compile it as a module.
-	  If unsure, say N.
-
-config PINCTRL_SCUBA
-	tristate "Qualcomm Technologies Inc SCUBA pin controller driver"
-	depends on GPIOLIB && OF
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
 	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
-	  Technologies Inc SCUBA platform.
-	  Say Y here to compile statically, or M here to compile it as a module.
-	  If unsure, say N.
+	  Technologies Inc SC7180 platform.
 
-config PINCTRL_PIKACHU
-	tristate "Qualcomm Technologies, Inc. PIKACHU pin controller driver"
-	depends on GPIOLIB && OF
+config PINCTRL_SC7280
+	tristate "Qualcomm Technologies Inc SC7280 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
 	help
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc PIKACHU platform.
-	  Say Y here to compile statically, or M here to compile it as a
-	  module. If unsure, say N.
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SC7280 platform.
 
-config PINCTRL_MONACO
-        tristate "Qualcomm Technologies, Inc MONACO pin controller driver"
-        depends on GPIOLIB && OF
+config PINCTRL_SC8180X
+	tristate "Qualcomm Technologies Inc SC8180x pin controller driver"
+	depends on (OF || ACPI)
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SC8180x platform.
+
+config PINCTRL_SC8280XP
+	tristate "Qualcomm Technologies Inc SC8280xp pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SC8280xp platform.
+
+config PINCTRL_SDM660
+	tristate "Qualcomm Technologies Inc SDM660 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	 This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	 Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	 Technologies Inc SDM660 platform.
+
+config PINCTRL_SDM670
+	tristate "Qualcomm Technologies Inc SDM670 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	 This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	 Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	 Technologies Inc SDM670 platform.
+
+config PINCTRL_SDM845
+	tristate "Qualcomm Technologies Inc SDM845 pin controller driver"
+	depends on (OF || ACPI)
+	depends on ARM64 || COMPILE_TEST
+	help
+	 This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	 Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	 Technologies Inc SDM845 platform.
+
+config PINCTRL_SDX55
+	tristate "Qualcomm Technologies Inc SDX55 pin controller driver"
+	depends on ARM || COMPILE_TEST
+	help
+	 This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	 Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	 Technologies Inc SDX55 platform.
+
+config PINCTRL_SDX65
+        tristate "Qualcomm Technologies Inc SDX65 pin controller driver"
+        depends on ARM || COMPILE_TEST
+        help
+         This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+         Qualcomm Technologies Inc TLMM block found on the Qualcomm
+         Technologies Inc SDX65 platform.
+
+config PINCTRL_SDX75
+        tristate "Qualcomm Technologies Inc SDX75 pin controller driver"
+        depends on ARM64 || COMPILE_TEST
         help
          This is the pinctrl, pinmux, pinconf and gpiolib driver for the
          Qualcomm Technologies Inc TLMM block found on the Qualcomm
@@ -405,6 +404,203 @@ config PINCTRL_SM8250
 	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
 	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
 	  Technologies Inc SM8250 platform.
+
+config PINCTRL_SM8350
+	tristate "Qualcomm Technologies Inc SM8350 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SM8350 platform.
+
+config PINCTRL_SM8450
+	tristate "Qualcomm Technologies Inc SM8450 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SM8450 platform.
+
+config PINCTRL_SM8550
+	tristate "Qualcomm Technologies Inc SM8550 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SM8550 platform.
+
+config PINCTRL_SM8650
+	tristate "Qualcomm Technologies Inc SM8650 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SM8650 platform.
+
+config PINCTRL_SM8750
+	tristate "Qualcomm Technologies Inc SM8750 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SM8750 platform.
+
+config PINCTRL_X1E80100
+	tristate "Qualcomm Technologies Inc X1E80100 pin controller driver"
+	depends on ARM64 || COMPILE_TEST
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc X1E80100 platform.
+	  Say Y here to compile statically, or M here to compile it as a module.
+	  If unsure, say N.
+
+config PINCTRL_TLMM_TEST
+	tristate "Qualcomm TLMM test driver"
+	depends on ARM64 || COMPILE_TEST
+	depends on KUNIT
+	help
+	  This driver provides test cases for the interrupt capabilities of
+	  TLMM driver (pinctrl-msm). Specify a floating gpio to use for testing
+	  using the module parameter "gpio" and execute the kunit suite.
+	  If unsure, say N.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config PINCTRL_CANOE
+	tristate "Qualcomm Technologies, Inc. CANOE pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc CANOE platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_ALOR
+	tristate "Qualcomm Technologies, Inc. Alor pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc Alor platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_CHORA
+	tristate "Qualcomm Technologies, Inc. Chora pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc Chora platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_MALABAR
+	tristate "Qualcomm Technologies, Inc. Malabar pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc Malabar platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_SUN
+	tristate "Qualcomm Technologies, Inc. SUN pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc SUN platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_VIENNA
+	tristate "Qualcomm Technologies, Inc. VIENNA pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc VIENNA platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_PINEAPPLE
+	tristate "Qualcomm Technologies, Inc. Pineapple pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc PINEAPPLE platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_YUPIK
+	tristate "Qualcomm Technologies Inc YUPIK pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc YUPIK platform.
+	  Say Y here to compile statically, or M here to compile it as a module.
+	  If unsure, say N.
+
+config PINCTRL_LAHAINA
+	tristate "Qualcomm Technologies Inc LAHAINA pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc LAHAINA platform.
+	  Say Y here to compile statically, or M here to compile it as a module.
+	  If unsure, say N.
+
+config PINCTRL_KHAJE
+	tristate "Qualcomm Technologies, Inc KHAJE pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc KHAJE platform.
+	  Say Y here to compile statically, or M here to compile it as a module.
+	  If unsure, say N.
+
+config PINCTRL_BENGAL
+	tristate "Qualcomm Technologies, Inc BENGAL pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc BENGAL platform.
+	  Say Y here to compile statically, or M here to compile it as a module.
+	  If unsure, say N.
+
+config PINCTRL_SCUBA
+	tristate "Qualcomm Technologies Inc SCUBA pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
+	  Technologies Inc SCUBA platform.
+	  Say Y here to compile statically, or M here to compile it as a module.
+	  If unsure, say N.
+
+config PINCTRL_PIKACHU
+	tristate "Qualcomm Technologies, Inc. PIKACHU pin controller driver"
+	depends on GPIOLIB && OF
+	help
+	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
+	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
+	  block found on the Qualcomm Technologies Inc PIKACHU platform.
+	  Say Y here to compile statically, or M here to compile it as a
+	  module. If unsure, say N.
+
+config PINCTRL_MONACO
+        tristate "Qualcomm Technologies, Inc MONACO pin controller driver"
+        depends on GPIOLIB && OF
+        help
           This is the pinctrl, pinmux, pinconf and gpiolib driver for the
           Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
           block found on the Qualcomm Technologies Inc MONACO platform.
@@ -431,36 +627,5 @@ config PINCTRL_SERAPH
 	  Say Y here to compile statically, or M here to compile it as a
 	  module. If unsure, say N.
 
-config PINCTRL_SM8750
-	tristate "Qualcomm Technologies Inc SM8750 pin controller driver"
-	depends on ARM64 || COMPILE_TEST
-	help
-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc TLMM block found on the Qualcomm
-	  Technologies Inc SM8750 platform.
-
-config PINCTRL_X1E80100
-	tristate "Qualcomm Technologies Inc X1E80100 pin controller driver"
-	depends on ARM64 || COMPILE_TEST
-config PINCTRL_GLYMUR
-	tristate "Qualcomm Technologies, Inc. GLYMUR pin controller driver"
-	depends on GPIOLIB && OF
-	help
-	  This is the pinctrl, pinmux, pinconf and gpiolib driver for the
-	  Qualcomm Technologies Inc Top Level Mode Multiplexer block (TLMM)
-	  block found on the Qualcomm Technologies Inc Glymur platform.
-	  Say Y here to compile statically, or M here to compile it as a module.
-	  If unsure, say N.
-
-config PINCTRL_TLMM_TEST
-	tristate "Qualcomm TLMM test driver"
-	depends on ARM64 || COMPILE_TEST
-	depends on KUNIT
-	help
-	  This driver provides test cases for the interrupt capabilities of
-	  TLMM driver (pinctrl-msm). Specify a floating gpio to use for testing
-	  using the module parameter "gpio" and execute the kunit suite.
-	  If unsure, say N.
 
 endif
-

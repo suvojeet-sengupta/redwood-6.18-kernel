@@ -3,6 +3,14 @@
 # Virtualization support drivers
 #
 
+menuconfig VIRT_DRIVERS
+	bool "Virtualization drivers"
+	help
+	  Say Y here to get to see options for device drivers that support
+	  virtualization environments.
+
+	  If you say N, all options in this submenu will be skipped and disabled.
+
 if VIRT_DRIVERS
 
 config VMGENID
@@ -44,6 +52,4 @@ source "drivers/virt/coco/Kconfig"
 source "drivers/virt/geniezone/Kconfig"
 
 source "drivers/virt/gunyah/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/virt/gunyah/Kconfig"
-
 endif

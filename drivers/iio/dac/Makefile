@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for industrial I/O DAC drivers
+#
 
 # When adding new entries keep the list in alphabetical order
 obj-$(CONFIG_AD3530R) += ad3530r.o
@@ -56,7 +59,7 @@ obj-$(CONFIG_TI_DAC5571) += ti-dac5571.o
 obj-$(CONFIG_TI_DAC7311) += ti-dac7311.o
 obj-$(CONFIG_TI_DAC7612) += ti-dac7612.o
 obj-$(CONFIG_VF610_DAC) += vf610_dac.o
+
+# Qualcomm (from 6.12 soc-repo)
 ccflags-y += -I$(src)
-
 obj-$(CONFIG_QCOM_SPMI_VDAC) += qcom-spmi-vdac.o
-

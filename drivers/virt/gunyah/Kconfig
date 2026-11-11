@@ -36,8 +36,38 @@ config GUNYAH_QCOM_PLATFORM
 	  Enable support for interacting with Gunyah on Qualcomm
 	  platforms. Interaction with Qualcomm firmware requires
 	  extra platform-specific support.
+
 	  Say Y/M here to use Gunyah on Qualcomm platforms.
 
+config GUNYAH_IRQFD
+	tristate "Gunyah irqfd interface"
+	depends on GUNYAH
+	help
+	  Enable kernel support for creating irqfds which can raise an interrupt
+	  on Gunyah virtual machine.
+
+	  Say Y/M here if unsure and you want to support Gunyah VMMs.
+
+config GUNYAH_IOEVENTFD
+	tristate "Gunyah ioeventfd interface"
+	depends on GUNYAH
+	help
+	  Enable kernel support for creating ioeventfds which can alert userspace
+	  when a Gunyah virtual machine accesses a memory address.
+
+	  Say Y/M here if unsure and you want to support Gunyah VMMs.
+
+config GUNYAH_QCOM_TRUSTED_VM
+	tristate "Gunyah Qualcomm Trusted VM Support"
+	depends on GUNYAH
+	help
+	  Enable kernel support for creating Qualcomm Trusted VMs.
+	  They are a kind of protected VM which is authenticated by the
+	  firmware.
+
+	  Say Y/M here if unsure and you want to support QTVMs.
+
+# Qualcomm (from 6.12 soc-repo)
 menuconfig GUNYAH_DRIVERS
 	bool "Gunyah Vendor Virtualization drivers"
 	depends on ARM64
@@ -51,8 +81,6 @@ menuconfig GUNYAH_DRIVERS
 	  virtualization environment.
 
 	  If you say N, all options in this submenu will be skipped and disabled.
-
-if GUNYAH_DRIVERS
 
 config GH_VIRT_WATCHDOG
 	tristate "Gunyah Virtual Watchdog Driver"
@@ -233,5 +261,4 @@ config GH_RM_HEAP_MANAGER
 	  a memory protected region.
 	  Say Y/M here if unsure and you want to support Gunyah VMs.
 
-endif
 

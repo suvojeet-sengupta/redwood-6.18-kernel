@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for ALSA
+#
 
 snd-usb-audio-y := 	card.o \
 			clock.o \
@@ -19,10 +22,9 @@ snd-usb-audio-y := 	card.o \
 			quirks.o \
 			stream.o \
 			validate.o
-ccflags-y += -I$(src)
 
-obj-$(CONFIG_SND_USB_AUDIO_QMI) += snd-usb-audio-qmi.o
-snd-usb-audio-qmi-objs += usb_audio_qmi_svc.o usb_audio_qmi_v01.o
+snd-usb-audio-$(CONFIG_SND_USB_AUDIO_MIDI_V2) += midi2.o
+snd-usb-audio-$(CONFIG_SND_USB_AUDIO_USE_MEDIA_CONTROLLER) += media.o
 
 snd-usbmidi-lib-y := midi.o
 
@@ -35,3 +37,8 @@ obj-$(CONFIG_SND_USB_US122L) += snd-usbmidi-lib.o
 
 obj-$(CONFIG_SND) += misc/ usx2y/ caiaq/ 6fire/ hiface/ bcd2000/ qcom/
 obj-$(CONFIG_SND_USB_LINE6)	+= line6/
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_SND_USB_AUDIO_QMI) += snd-usb-audio-qmi.o
+snd-usb-audio-qmi-objs += usb_audio_qmi_svc.o usb_audio_qmi_v01.o

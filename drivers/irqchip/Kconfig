@@ -505,18 +505,8 @@ config QCOM_PDC
 	  Power Domain Controller driver to manage and configure wakeup
 	  IRQs for Qualcomm Technologies Inc (QTI) mobile chips.
 
-config QCOM_SHOW_RESUME_IRQ
-        tristate "Enable logging of interrupts that could have caused resume"
-        depends on PM
-        depends on ARM_GIC || ARM_GIC_V3
-        help
-          This option logs wake up interrupts that have triggered just before
-          the resume loop unrolls. It helps to debug to know any unnecessary
-          wake up interrupts that causes system to come out of low power modes.
-          Say Y if you want to debug why the system resumed.
-
-config MPM_LEGACY
-	tristate "MPM_LEGACY"
+config QCOM_MPM
+	tristate "QCOM MPM"
 	depends on ARCH_QCOM
 	depends on MAILBOX
 	select IRQ_DOMAIN_HIERARCHY
@@ -730,6 +720,14 @@ config LOONGSON_HTPIC
 	depends on MACH_LOONGSON64 && MIPS
 	default y
 	select IRQ_DOMAIN
+	select GENERIC_IRQ_CHIP
+	help
+	  Support for the Loongson-3 HyperTransport PIC Controller.
+
+config LOONGSON_HTVEC
+	bool "Loongson HyperTransport Interrupt Vector Controller"
+	depends on MACH_LOONGSON64
+	default MACH_LOONGSON64
 	select IRQ_DOMAIN_HIERARCHY
 	help
 	  Support for the Loongson HyperTransport Interrupt Vector Controller.
@@ -820,9 +818,29 @@ config SUNPLUS_SP7021_INTC
 	  SP7021 SoC has 2 Chips: C-Chip & P-Chip. This is used as a
 	  chained controller, routing all interrupt source in P-Chip to
 	  the primary controller on C-Chip.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config QCOM_SHOW_RESUME_IRQ
+        tristate "Enable logging of interrupts that could have caused resume"
+        depends on PM
+        depends on ARM_GIC || ARM_GIC_V3
+        help
+          This option logs wake up interrupts that have triggered just before
+          the resume loop unrolls. It helps to debug to know any unnecessary
+          wake up interrupts that causes system to come out of low power modes.
+          Say Y if you want to debug why the system resumed.
+
+config MPM_LEGACY
+	tristate "MPM_LEGACY"
+	depends on ARCH_QCOM
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_HIERARCHY
+	help
 	  MSM Power Manager driver to manage and configure wakeup
 	  IRQs for Legacy Qualcomm Technologies Inc (QTI) mobile chips.
 	  Say yes here to enable the MSM Power Manager interrupt
 	  controller to use as a wakeup interrupt controller.
+
 
 endmenu

@@ -3,28 +3,6 @@
 # Network device configuration
 #
 
-config VIRTIO_NET
-	tristate "Virtio network driver"
-	depends on VIRTIO
-	select NET_FAILOVER
-	select DIMLIB
-	help
-	  Enable this option to include the VirtIO-based network driver.
-	  This driver is essential for supporting VirtIO network devices,
-	  commonly used in virtualization environments. It works with
-	  QEMU-based virtual machine managers (e.g., KVM or Xen).
-	  Say Y or M.
-
-config VIRTIO_NET_DISABLE_F_DEVICE_STATS
-	bool "Disable/Enable F_DEVICE_STATS bit in Virtio network driver"
-	depends on VIRTIO_NET
-	help
-	  This config will disable or enable F_DEVICE_STATS bit in the
-	  VirtIO-based network driver. Disabling this bit can avoid
-	  crashes caused by QNX VirtIO-based network backend driver
-	  using F_DEVICE_STATS bit value for other function.
-	  Say Y or N.
-
 menuconfig NETDEVICES
 	default y if UML
 	depends on NET
@@ -44,6 +22,8 @@ menuconfig NETDEVICES
 
 	  If unsure, say Y.
 
+# All the following symbols are dependent on NETDEVICES - do not repeat
+# that for each of the symbols.
 if NETDEVICES
 
 config MII
@@ -666,9 +646,19 @@ config NETDEV_LEGACY_INIT
 	help
 	  Drivers that call netdev_boot_setup_check() should select this
 	  symbol, everything else no longer needs it.
-source "$(KCONFIG_EXT_PREFIX)drivers/net/pcs/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/net/ethernet/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/net/phy/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/net/mdio_fe/Kconfig"
+
+
+# Qualcomm (from 6.12 soc-repo)
+config VIRTIO_NET_DISABLE_F_DEVICE_STATS
+	bool "Disable/Enable F_DEVICE_STATS bit in Virtio network driver"
+	depends on VIRTIO_NET
+	help
+	  This config will disable or enable F_DEVICE_STATS bit in the
+	  VirtIO-based network driver. Disabling this bit can avoid
+	  crashes caused by QNX VirtIO-based network backend driver
+	  using F_DEVICE_STATS bit value for other function.
+	  Say Y or N.
+
+source "drivers/net/mdio_fe/Kconfig"
 
 endif # NETDEVICES

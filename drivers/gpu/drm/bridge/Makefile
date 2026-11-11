@@ -1,9 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0
-
-ccflags-y += -I$(src)
-
-obj-$(CONFIG_DRM_LT9611UXC) += lt9611uxc.o
-
 obj-$(CONFIG_DRM_AUX_BRIDGE) += aux-bridge.o
 obj-$(CONFIG_DRM_AUX_HPD_BRIDGE) += aux-hpd-bridge.o
 obj-$(CONFIG_DRM_CHIPONE_ICN6211) += chipone-icn6211.o
@@ -50,3 +45,11 @@ obj-$(CONFIG_DRM_WAVESHARE_BRIDGE) += waveshare-dsi.o
 obj-$(CONFIG_DRM_NWL_MIPI_DSI) += nwl-dsi.o
 obj-$(CONFIG_DRM_ITE_IT66121) += ite-it66121.o
 
+obj-y += analogix/
+obj-y += cadence/
+obj-y += imx/
+obj-y += synopsys/
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_DRM_LT9611UXC) += lt9611uxc.o

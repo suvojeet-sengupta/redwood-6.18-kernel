@@ -146,6 +146,148 @@ config TIFM_7XX1
 	tristate "TI Flash Media PCI74xx/PCI76xx host adapter support"
 	depends on PCI && TIFM_CORE
 	default TIFM_CORE
+	help
+	  This option enables support for Texas Instruments(R) PCI74xx and
+	  PCI76xx families of Flash Media adapters, found in many laptops.
+	  To make actual use of the device, you will have to select some
+	  flash card format drivers, as outlined in the TIFM_CORE Help.
+
+	  To compile this driver as a module, choose M here: the module will
+	  be called tifm_7xx1.
+
+config ICS932S401
+	tristate "Integrated Circuits ICS932S401"
+	depends on I2C
+	help
+	  If you say yes here you get support for the Integrated Circuits
+	  ICS932S401 clock control chips.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called ics932s401.
+
+config ATMEL_SSC
+	tristate "Device driver for Atmel SSC peripheral"
+	depends on HAS_IOMEM && (ARCH_AT91 || COMPILE_TEST)
+	help
+	  This option enables device driver support for Atmel Synchronized
+	  Serial Communication peripheral (SSC).
+
+	  The SSC peripheral supports a wide variety of serial frame based
+	  communications, i.e. I2S, SPI, etc.
+
+	  If unsure, say N.
+
+config ENCLOSURE_SERVICES
+	tristate "Enclosure Services"
+	help
+	  Provides support for intelligent enclosures (bays which
+	  contain storage devices).  You also need either a host
+	  driver (SCSI/ATA) which supports enclosures
+	  or a SCSI enclosure device (SES) to use these services.
+
+config SGI_XP
+	tristate "Support communication between SGI SSIs"
+	depends on NET
+	depends on X86_UV && SMP
+	depends on X86_64 || BROKEN
+	select SGI_GRU if X86_64 && SMP
+	help
+	  An SGI machine can be divided into multiple Single System
+	  Images which act independently of each other and have
+	  hardware based memory protection from the others.  Enabling
+	  this feature will allow for direct communication between SSIs
+	  based on a network adapter and DMA messaging.
+
+config SMPRO_ERRMON
+	tristate "Ampere Computing SMPro error monitor driver"
+	depends on MFD_SMPRO || COMPILE_TEST
+	help
+	  Say Y here to get support for the SMpro error monitor function
+	  provided by Ampere Computing's Altra and Altra Max SoCs. Upon
+	  loading, the driver creates sysfs files which can be use to gather
+	  multiple HW error data reported via read and write system calls.
+
+	  To compile this driver as a module, say M here. The driver will be
+	  called smpro-errmon.
+
+config SMPRO_MISC
+	tristate "Ampere Computing SMPro miscellaneous driver"
+	depends on MFD_SMPRO || COMPILE_TEST
+	help
+	  Say Y here to get support for the SMpro error miscellalenous function
+	  provided by Ampere Computing's Altra and Altra Max SoCs.
+
+	  To compile this driver as a module, say M here. The driver will be
+	  called smpro-misc.
+
+config CS5535_MFGPT
+	tristate "CS5535/CS5536 Geode Multi-Function General Purpose Timer (MFGPT) support"
+	depends on MFD_CS5535
+	help
+	  This driver provides access to MFGPT functionality for other
+	  drivers that need timers.  MFGPTs are available in the CS5535 and
+	  CS5536 companion chips that are found in AMD Geode and several
+	  other platforms.  They have a better resolution and max interval
+	  than the generic PIT, and are suitable for use as high-res timers.
+	  You probably don't want to enable this manually; other drivers that
+	  make use of it should enable it.
+
+config CS5535_MFGPT_DEFAULT_IRQ
+	int
+	depends on CS5535_MFGPT
+	default 7
+	help
+	  MFGPTs on the CS5535 require an interrupt.  The selected IRQ
+	  can be overridden as a module option as well as by driver that
+	  use the cs5535_mfgpt_ API; however, different architectures might
+	  want to use a different IRQ by default.  This is here for
+	  architectures to set as necessary.
+
+config CS5535_CLOCK_EVENT_SRC
+	tristate "CS5535/CS5536 high-res timer (MFGPT) events"
+	depends on GENERIC_CLOCKEVENTS && CS5535_MFGPT
+	help
+	  This driver provides a clock event source based on the MFGPT
+	  timer(s) in the CS5535 and CS5536 companion chips.
+	  MFGPTs have a better resolution and max interval than the
+	  generic PIT, and are suitable for use as high-res timers.
+
+config GEHC_ACHC
+	tristate "GEHC ACHC support"
+	depends on SPI && SYSFS
+	depends on SOC_IMX53 || COMPILE_TEST
+	select FW_LOADER
+	help
+	  Support for GE ACHC microcontroller, that is part of the GE
+	  PPD device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gehc-achc.
+
+config HI6421V600_IRQ
+	tristate "HiSilicon Hi6421v600 IRQ and powerkey"
+	depends on OF
+	depends on SPMI
+	depends on HAS_IOMEM
+	select MFD_CORE
+	select REGMAP_SPMI
+	help
+	  This driver provides IRQ handling for Hi6421v600, used on
+	  some Kirin chipsets, like the one at Hikey 970.
+
+config HP_ILO
+	tristate "Channel interface driver for the HP iLO processor"
+	depends on PCI
+	help
+	  The channel interface driver allows applications to communicate
+	  with iLO management processors present on HP ProLiant servers.
+	  Upon loading, the driver creates /dev/hpilo/dXccbN files, which
+	  can be used to gather data from the management processor, via
+	  read and write system calls.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called hpilo.
+
 config QCOM_COINCELL
 	tristate "Qualcomm coincell charger support"
 	depends on MFD_SPMI_PMIC || COMPILE_TEST
@@ -156,86 +298,61 @@ config QCOM_COINCELL
 	  to maintain PMIC register and RTC state in the absence of
 	  external power.
 
-config QSEECOM_PROXY
-	tristate "To enable qseecom proxy driver for kernel client"
-	help
-	 qseecom proxy driver serves the kernel clients by providing
-	 required ops via call back functions with a minimal framework.
-	 These callback functions can be used to start, shutdown and
-	 send commands to the trusted apps.
-
-config BOOTMARKER_PROXY
-	tristate "To enable Bootmarker proxy driver for kernel client"
-	help
-	  Bootmarker proxy driver serves the kernel clients by providing
-	  required ops via call back functions with a minimal framework.
-	  These callback functions can be used to access the place marker.
-	  To compile this driver as a module, choose M here.
-	  If unsure, say N.
-
-config LKDTM
-	tristate "Linux Kernel Dump Test Tool Module"
-	depends on DEBUG_FS
-	help
-	This module enables testing of the different dumping mechanisms by
-	inducing system failures at predefined crash points.
-	If you don't need it: say N
-	Choose M here to compile this code as a module. The module will be
-	called lkdtm.
-
-	Documentation on how to use the module can be found in
-	Documentation/fault-injection/provoke-crashes.rst
-
-config ISL97900_LED
-	tristate "ISL97900_I2C_Driver"
-	select REGMAP_I2C
-	depends on I2C
-	help
-	  Support for ISL97900 LED driver IC, using this driver,
-	  user can set different values to control the LED current
-	  using I2C.
-
-	  Say Y if you want to enable ISL97900 driver.
-
-
-config QTI_FASTRPC
+config QCOM_FASTRPC
 	tristate "Qualcomm FastRPC"
 	depends on ARCH_QCOM || COMPILE_TEST
 	depends on RPMSG
-	select QCOM_SCM
 	select DMA_SHARED_BUFFER
+	select QCOM_SCM
 	help
 	  Provides a communication mechanism that allows for clients to
 	  make remote method invocations across processor boundary to
 	  applications DSP processor. Say M if you want to enable this
 	  module.
 
-config TPS6286_STEP_DOWN_CONV
-	tristate "TPS6286_I2C_Driver"
-	select REGMAP_I2C
+config SGI_GRU
+	tristate "SGI GRU driver"
+	depends on X86_UV && SMP
+	select MMU_NOTIFIER
+	help
+	  The GRU is a hardware resource located in the system chipset. The GRU
+	  contains memory that can be mmapped into the user address space.
+	  This memory is used to communicate with the GRU to perform functions
+	  such as load/store, scatter/gather, bcopy, AMOs, etc.  The GRU is
+	  directly accessed by user instructions using user virtual addresses.
+	  GRU instructions (ex., bcopy) use user virtual addresses for operands.
+
+	  If you are not running on a SGI UV system, say N.
+
+config SGI_GRU_DEBUG
+	bool  "SGI GRU driver debug"
+	depends on SGI_GRU
+	help
+	  This option enables additional debugging code for the SGI GRU driver.
+	  If you are unsure, say N.
+
+config APDS9802ALS
+	tristate "Medfield Avago APDS9802 ALS Sensor module"
 	depends on I2C
 	help
-	  Support for TPS6286 synchronous Step-Down Converter with I2C
-	  interface. User can set different output voltage presets using
-	  I2C and Ramp speed.
+	  If you say yes here you get support for the ALS APDS9802 ambient
+	  light sensor.
 
-	  Say Y if you want to enable TPS6286 driver.
+	  This driver can also be built as a module.  If so, the module
+	  will be called apds9802als.
 
-config INA234_CURRENT_MONITOR
-        tristate "INA234_I2C_Driver"
-        select REGMAP_I2C
-        depends on I2C
-        help
-          Support for INA234 Current Monitor driver IC, using this driver,
-          user can set different values to monitor voltage across an external
-          sense resistor and reports values for currrent, bus voltage and power
-          using I2C.
+config ISL29003
+	tristate "Intersil ISL29003 ambient light sensor"
+	depends on I2C && SYSFS
+	help
+	  If you say yes here you get support for the Intersil ISL29003
+	  ambient light sensor.
 
-          Say Y if you want to enable INA234 driver.
+	  This driver can also be built as a module.  If so, the module
+	  will be called isl29003.
 
-config SLG4DC_SIGNAL_IC
-	tristate "SLG4DC_I2C_Driver"
-	select REGMAP_I2C
+config ISL29020
+	tristate "Intersil ISL29020 ambient light sensor"
 	depends on I2C
 	help
 	  If you say yes here you get support for the Intersil ISL29020
@@ -570,9 +687,81 @@ source "drivers/misc/mchp_pci1xxxx/Kconfig"
 source "drivers/misc/keba/Kconfig"
 source "drivers/misc/amd-sbi/Kconfig"
 source "drivers/misc/rp1/Kconfig"
+
+# Qualcomm (from 6.12 soc-repo)
+config QSEECOM_PROXY
+	tristate "To enable qseecom proxy driver for kernel client"
+	help
+	 qseecom proxy driver serves the kernel clients by providing
+	 required ops via call back functions with a minimal framework.
+	 These callback functions can be used to start, shutdown and
+	 send commands to the trusted apps.
+
+config BOOTMARKER_PROXY
+	tristate "To enable Bootmarker proxy driver for kernel client"
+	help
+	  Bootmarker proxy driver serves the kernel clients by providing
+	  required ops via call back functions with a minimal framework.
+	  These callback functions can be used to access the place marker.
+	  To compile this driver as a module, choose M here.
+	  If unsure, say N.
+
+config ISL97900_LED
+	tristate "ISL97900_I2C_Driver"
+	select REGMAP_I2C
+	depends on I2C
+	help
+	  Support for ISL97900 LED driver IC, using this driver,
+	  user can set different values to control the LED current
+	  using I2C.
+
+	  Say Y if you want to enable ISL97900 driver.
+
+config QTI_FASTRPC
+	tristate "Qualcomm FastRPC"
+	depends on ARCH_QCOM || COMPILE_TEST
+	depends on RPMSG
+	select QCOM_SCM
+	select DMA_SHARED_BUFFER
+	help
+	  Provides a communication mechanism that allows for clients to
+	  make remote method invocations across processor boundary to
+	  applications DSP processor. Say M if you want to enable this
+	  module.
+
+config TPS6286_STEP_DOWN_CONV
+	tristate "TPS6286_I2C_Driver"
+	select REGMAP_I2C
+	depends on I2C
+	help
+	  Support for TPS6286 synchronous Step-Down Converter with I2C
+	  interface. User can set different output voltage presets using
+	  I2C and Ramp speed.
+
+	  Say Y if you want to enable TPS6286 driver.
+
+config INA234_CURRENT_MONITOR
+        tristate "INA234_I2C_Driver"
+        select REGMAP_I2C
+        depends on I2C
+        help
+          Support for INA234 Current Monitor driver IC, using this driver,
+          user can set different values to monitor voltage across an external
+          sense resistor and reports values for currrent, bus voltage and power
+          using I2C.
+
+          Say Y if you want to enable INA234 driver.
+
+config SLG4DC_SIGNAL_IC
+	tristate "SLG4DC_I2C_Driver"
+	select REGMAP_I2C
+	depends on I2C
+	help
 	  Support for SLG4DC49982 low power driver IC, using this driver,
 	  user can set different values to enable power from this small
 	  power device using I2C.
 
 	  Say Y if you want to enable SLG4DC driver.
+
+
 endmenu

@@ -1,10 +1,23 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for the kernel serial device drivers.
+#
 
-ccflags-y += -I$(src)
+obj-$(CONFIG_SERIAL_CORE) += serial_base.o
+serial_base-y := serial_core.o serial_base_bus.o serial_ctrl.o serial_port.o
 
-obj-$(CONFIG_SERIAL_MSM_GENI) += msm_geni_serial.o
+obj-$(CONFIG_SERIAL_EARLYCON) += earlycon.o
+obj-$(CONFIG_SERIAL_EARLYCON_SEMIHOST) += earlycon-semihost.o
+obj-$(CONFIG_SERIAL_EARLYCON_RISCV_SBI) += earlycon-riscv-sbi.o
 
-obj-$(CONFIG_SERIAL_QCOM_GENI_MSM) += qcom_geni_serial_msm.o
+# These Sparc drivers have to appear before others such as 8250
+# which share ttySx minor node space.  Otherwise console device
+# names change and other unplesantries.
+obj-$(CONFIG_SERIAL_SUNCORE) += suncore.o
+obj-$(CONFIG_SERIAL_SUNHV) += sunhv.o
+obj-$(CONFIG_SERIAL_SUNZILOG) += sunzilog.o
+obj-$(CONFIG_SERIAL_SUNSU) += sunsu.o
+obj-$(CONFIG_SERIAL_SUNSAB) += sunsab.o
 
 obj-$(CONFIG_SERIAL_21285) += 21285.o
 
@@ -89,3 +102,8 @@ obj-$(CONFIG_KGDB_SERIAL_CONSOLE) += kgdboc.o
 obj-$(CONFIG_SERIAL_NUVOTON_MA35D1) += ma35d1_serial.o
 
 obj-$(CONFIG_SERIAL_PKVM_PL011) += pkvm-pl011/
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_SERIAL_MSM_GENI) += msm_geni_serial.o
+obj-$(CONFIG_SERIAL_QCOM_GENI_MSM) += qcom_geni_serial_msm.o

@@ -281,6 +281,38 @@ config MARVELL_CN10K_DDR_PMU
 	  event on CN10K platform.
 
 config DWC_PCIE_PMU
+	tristate "Synopsys DesignWare PCIe PMU"
+	depends on PCI
+	help
+	  Enable perf support for Synopsys DesignWare PCIe PMU Performance
+	  monitoring event on platform including the Alibaba Yitian 710.
+
+source "drivers/perf/arm_cspmu/Kconfig"
+
+source "drivers/perf/amlogic/Kconfig"
+
+config CXL_PMU
+	tristate "CXL Performance Monitoring Unit"
+	depends on CXL_BUS
+	help
+	  Support performance monitoring as defined in CXL rev 3.0
+	  section 13.2: Performance Monitoring. CXL components may have
+	  one or more CXL Performance Monitoring Units (CPMUs).
+
+	  Say 'y/m' to enable a driver that will attach to performance
+	  monitoring units and provide standard perf based interfaces.
+
+	  If unsure say 'm'.
+
+config MARVELL_PEM_PMU
+	tristate "MARVELL PEM PMU Support"
+	depends on ARCH_THUNDER || (COMPILE_TEST && 64BIT)
+	help
+	  Enable support for PCIe Interface performance monitoring
+	  on Marvell platform.
+
+
+# Qualcomm (from 6.12 soc-repo)
 config QCOM_LLCC_PMU
 	tristate "Qualcomm Technologies LLCC PMU"
 	depends on ARCH_QCOM && ARM64
@@ -310,11 +342,5 @@ config MSM_DWC_PCIE_PMU
 	  including the Alibaba Yitian 710 SoC. Say Y or M here to enable
 	  PCIe PMU event monitoring via perf stat/perf record.
 
-config MARVELL_PEM_PMU
-	tristate "MARVELL PEM PMU Support"
-	depends on ARCH_THUNDER || (COMPILE_TEST && 64BIT)
-	help
-	  Enable support for PCIe Interface performance monitoring
-	  on Marvell platform.
 
 endmenu

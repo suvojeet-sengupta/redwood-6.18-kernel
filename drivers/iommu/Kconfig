@@ -1,6 +1,26 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # The IOVA library may also be used by non-IOMMU_API users
+config IOMMU_IOVA
+	tristate
+
 # IOMMU_API always gets selected by whoever wants it.
+config IOMMU_API
+	bool
+
+config IOMMUFD_DRIVER
+	bool
+	default n
+
+menuconfig IOMMU_SUPPORT
+	bool "IOMMU Hardware Support"
+	depends on MMU
+	default y
+	help
+	  Say Y here if you want to compile device drivers for IO Memory
+	  Management Units into the kernel. These devices usually allow to
+	  remap DMA requests and/or remap interrupts from other devices on the
+	  system.
+
 if IOMMU_SUPPORT
 
 menu "Generic IOMMU Pagetable Support"
@@ -30,27 +50,36 @@ config IOMMU_IO_PGTABLE_LPAE_KUNIT_TEST
 
 	  If unsure, say N here.
 
-config IOMMU_IO_PGTABLE_CONTIG_HINT
-	bool "Enable contig hint"
-	depends on IOMMU_IO_PGTABLE_LPAE
+config IOMMU_IO_PGTABLE_ARMV7S
+	bool "ARMv7/v8 Short Descriptor Format"
+	select IOMMU_IO_PGTABLE
+	depends on ARM || ARM64 || COMPILE_TEST
 	help
-	  Enable config hint for LPAE page table allocator. This would
-	  allow multiple TLB entries to be combined into a single entry
-	  which optimizes TLB lookups.
+	  Enable support for the ARM Short-descriptor pagetable format.
+	  This supports 32-bit virtual and physical addresses mapped using
+	  2-level tables with 4KB pages/1MB sections, and contiguous entries
+	  for 64KB pages/16MB supersections if indicated by the IOMMU driver.
+
+config IOMMU_IO_PGTABLE_ARMV7S_SELFTEST
+	bool "ARMv7s selftests"
+	depends on IOMMU_IO_PGTABLE_ARMV7S
+	help
+	  Enable self-tests for ARMv7s page table allocator. This performs
+	  a series of page-table consistency checks during boot.
 
 	  If unsure, say N here.
 
-config IOMMU_IO_PGTABLE_FAST
-	bool "Fast ARMv7/v8 Long Descriptor Format"
-	depends on (ARM || ARM64) && IOMMU_DMA
+config IOMMU_IO_PGTABLE_DART
+	bool "Apple DART Formats"
+	select IOMMU_IO_PGTABLE
+	depends on ARM64 || COMPILE_TEST
+	depends on !GENERIC_ATOMIC64	# for cmpxchg64()
 	help
-          Enable support for a subset of the ARM long descriptor pagetable
-	  format.  This allocator achieves fast performance by
-	  pre-allocating and pre-populating page table memory up front.
-	  only supports a 32 bit virtual address space.
+	  Enable support for the Apple DART pagetable formats. These include
+	  the t8020 and t6000/t8110 DART formats used in Apple M1/M2 family
+	  SoCs.
 
-          This implementation is mainly optimized for use cases where the
-          buffers are small (<= 64K) since it only supports 4K page sizes.
+	  If unsure, say N here.
 
 endmenu
 
@@ -292,79 +321,116 @@ config S390_IOMMU
 	select IOMMU_API
 	help
 	  Support for the IOMMU API for s390 PCI devices.
-# ARM IOMMU support
-config ARM_SMMU
-	tristate "ARM Ltd. System MMU (SMMU) Support"
-	depends on ARM64 || ARM || COMPILE_TEST
-	depends on !GENERIC_ATOMIC64	# for IOMMU_IO_PGTABLE_LPAE
+
+config MTK_IOMMU
+	tristate "MediaTek IOMMU Support"
+	depends on ARCH_MEDIATEK || COMPILE_TEST
+	select ARM_DMA_USE_IOMMU
 	select IOMMU_API
-	select IOMMU_IO_PGTABLE_LPAE
-	select ARM_DMA_USE_IOMMU if ARM
+	select IOMMU_IO_PGTABLE_ARMV7S
+	select MEMORY
+	select MTK_SMI
 	help
-	  Support for implementations of the ARM System MMU architecture
-	  versions 1 and 2.
+	  Support for the M4U on certain Mediatek SOCs. M4U is MultiMedia
+	  Memory Management Unit. This option enables remapping of DMA memory
+	  accesses for the multimedia subsystem.
 
-	  Say Y here if your SoC includes an IOMMU device implementing
-	  the ARM SMMU architecture.
+	  If unsure, say N here.
 
-config ARM_SMMU_LEGACY_DT_BINDINGS
-	bool "Support the legacy \"mmu-masters\" devicetree bindings"
-	depends on ARM_SMMU=y && OF
+config MTK_IOMMU_V1
+	tristate "MediaTek IOMMU Version 1 (M4U gen1) Support"
+	depends on (ARCH_MEDIATEK && ARM) || COMPILE_TEST
+	select ARM_DMA_USE_IOMMU
+	select IOMMU_API
+	select MEMORY
+	select MTK_SMI
 	help
-	  Support for the badly designed and deprecated "mmu-masters"
-	  devicetree bindings. This allows some DMA masters to attach
-	  to the SMMU but does not provide any support via the DMA API.
-	  If you're lucky, you might be able to get VFIO up and running.
+	  Support for the M4U on certain Mediatek SoCs. M4U generation 1 HW is
+	  Multimedia Memory Managememt Unit. This option enables remapping of
+	  DMA memory accesses for the multimedia subsystem.
 
-	  If you say Y here then you'll make me very sad. Instead, say N
-	  and move your firmware to the utopian future that was 2016.
+	  if unsure, say N here.
 
-config ARM_SMMU_DISABLE_BYPASS_BY_DEFAULT
-	bool "Default to disabling bypass on ARM SMMU v1 and v2"
-	depends on ARM_SMMU
-	default y
+config HYPERV_IOMMU
+	bool "Hyper-V IRQ Handling"
+	depends on HYPERV && X86
+	select IOMMU_API
+	default HYPERV
 	help
-	  Say Y here to (by default) disable bypass streams such that
-	  incoming transactions from devices that are not attached to
-	  an iommu domain will report an abort back to the device and
-	  will not be allowed to pass through the SMMU.
+	  Stub IOMMU driver to handle IRQs to support Hyper-V Linux
+	  guest and root partitions.
 
-	  Any old kernels that existed before this KConfig was
-	  introduced would default to _allowing_ bypass (AKA the
-	  equivalent of NO for this config).  However the default for
-	  this option is YES because the old behavior is insecure.
-
-	  There are few reasons to allow unmatched stream bypass, and
-	  even fewer good ones.  If saying YES here breaks your board
-	  you should work on fixing your board.  This KConfig option
-	  is expected to be removed in the future and we'll simply
-	  hardcode the bypass disable in the code.
-
-	  NOTE: the kernel command line parameter
-	  'arm-smmu.disable_bypass' will continue to override this
-	  config.
-
-config ARM_SMMU_QCOM
-	def_tristate y
-	depends on ARM_SMMU && ARCH_QCOM
-	select QCOM_SCM
+config VIRTIO_IOMMU
+	tristate "Virtio IOMMU driver"
+	depends on VIRTIO
+	depends on (ARM64 || X86)
+	select IOMMU_API
+	select INTERVAL_TREE
+	select ACPI_VIOT if ACPI
 	help
-	  When running on a Qualcomm platform that has the custom variant
-	  of the ARM SMMU, this needs to be built into the SMMU driver.
+	  Para-virtualised IOMMU driver with virtio.
 
-config ARM_SMMU_QCOM_DEBUG
-	bool "ARM SMMU QCOM implementation defined debug support"
-	depends on ARM_SMMU_QCOM=y
+	  Say Y here if you intend to run this kernel as a guest.
+
+config SPRD_IOMMU
+	tristate "Unisoc IOMMU Support"
+	depends on ARCH_SPRD || COMPILE_TEST
+	select IOMMU_API
 	help
-	  Support for implementation specific debug features in ARM SMMU
-	  hardware found in QTI platforms. This include support for
-	  the Translation Buffer Units (TBU) that can be used to obtain
-	  additional information when debugging memory management issues
-	  like context faults.
+	  Support for IOMMU on Unisoc's SoCs, this IOMMU can be used by
+	  Unisoc's multimedia devices, such as display, Image codec(jpeg)
+	  and a few signal processors, including VSP(video), GSP(graphic),
+	  ISP(image), and CPP(camera pixel processor), etc.
 
-	  Say Y here to enable debug for issues such as context faults
-	  or TLB sync timeouts which requires implementation defined
-	  register dumps.
+	  Say Y here if you want to use the multimedia devices listed above.
+
+config PKVM_PVIOMMU
+	tristate "pKVM pvIOMMU driver"
+	depends on ARM64
+	select IOMMU_API
+	help
+	  Para-virtualised IOMMU driver with pKVM.
+
+	  Say Y here if you intend to run this kernel as a guest.
+
+config PKVM_PVIOMMU_SELFTEST
+	bool "pKVM pvIOMMU selftest"
+	depends on PKVM_PVIOMMU
+	help
+	  Basic test for PKVM_PVIOMMU
+
+
+# Qualcomm (from 6.12 soc-repo)
+config IOMMU_IO_PGTABLE_LPAE_SELFTEST
+	bool "LPAE selftests"
+	depends on IOMMU_IO_PGTABLE_LPAE
+	help
+	  Enable self-tests for LPAE page table allocator. This performs
+	  a series of page-table consistency checks during boot.
+
+	  If unsure, say N here.
+
+config IOMMU_IO_PGTABLE_CONTIG_HINT
+	bool "Enable contig hint"
+	depends on IOMMU_IO_PGTABLE_LPAE
+	help
+	  Enable config hint for LPAE page table allocator. This would
+	  allow multiple TLB entries to be combined into a single entry
+	  which optimizes TLB lookups.
+
+	  If unsure, say N here.
+
+config IOMMU_IO_PGTABLE_FAST
+	bool "Fast ARMv7/v8 Long Descriptor Format"
+	depends on (ARM || ARM64) && IOMMU_DMA
+	help
+          Enable support for a subset of the ARM long descriptor pagetable
+	  format.  This allocator achieves fast performance by
+	  pre-allocating and pre-populating page table memory up front.
+	  only supports a 32 bit virtual address space.
+
+          This implementation is mainly optimized for use cases where the
+          buffers are small (<= 64K) since it only supports 4K page sizes.
 
 config QTI_IOMMU_SUPPORT
 	tristate "Support for QTI iommu drivers"
@@ -427,13 +493,6 @@ config QCOM_LAZY_MAPPING
 
 	  If unsure, say N here.
 
-config MTK_IOMMU_V1
-	tristate "MediaTek IOMMU Version 1 (M4U gen1) Support"
-	depends on (ARCH_MEDIATEK && ARM) || COMPILE_TEST
-	select ARM_DMA_USE_IOMMU
-	select IOMMU_API
-	select MEMORY
-	select MTK_SMI
 config ARM_SMMU_NVIDIA
 	tristate "NVIDIA Tegra SMMU implementation"
 	depends on ARM_SMMU && TEGRA_MC
@@ -445,34 +504,11 @@ config ARM_SMMU_NVIDIA
 	  Say M here if you are building for an NVIDIA Tegra platform
 	  that uses ARM SMMU.
 
-config HYPERV_IOMMU
-	bool "Hyper-V IRQ Handling"
-	depends on HYPERV && X86
-	select IOMMU_API
-	default HYPERV
-	help
-	  Stub IOMMU driver to handle IRQs to support Hyper-V Linux
-	  guest and root partitions.
-config ARM_SMMU_V3
-        tristate "ARM Ltd. System MMU Version 3 (SMMUv3) Support"
-        depends on ARM64
-        select IOMMU_API
-        select IOMMU_IO_PGTABLE_LPAE
-        select GENERIC_MSI_IRQ_DOMAIN
-        help
-          Support for implementations of the ARM System MMU architecture
-          version 3 providing translation support to a PCIe root complex.
-
-          Say Y here if your system includes an IOMMU device implementing
-          the ARM SMMUv3 architecture.
-
 config ARM_PARAVIRT_SMMU_V3
         tristate "Paravirtualized ARM SMMU V3 driver support"
         depends on ARM64
-        depends on QCOM_SCM
-        select IOMMU_API
+        depends on QCOM_SCM && IOMMU_API
         select IOMMU_IO_PGTABLE_LPAE
-        select GENERIC_MSI_IRQ_DOMAIN
         help
           Support for a paravirtualized implementation of ARM SMMU V3
           architecture.
@@ -480,18 +516,6 @@ config ARM_PARAVIRT_SMMU_V3
           Say Y here if your system has the corresponding backend
           SMMU-v3 support available which runs at a higher exception
           level.
-
-config ARM_SMMU_V3_SVA
-        bool "Shared Virtual Addressing support for the ARM SMMUv3"
-        depends on ARM_SMMU_V3
-        select IOMMU_SVA
-        select MMU_NOTIFIER
-        help
-          Support for sharing process address spaces with devices using the
-          SMMUv3.
-
-          Say Y here if your system supports SVA extensions such as PCIe PASID
-          and PRI.
 
 config ARM_SMMU_V3_QCOM_VIRTIO
         bool "Virtio-Iommu ARM-SMMU-V3 acceleration"
@@ -502,21 +526,6 @@ config ARM_SMMU_V3_QCOM_VIRTIO
           transitions. Enable awareness of arm-smmu-v3 register settings,
           pagetable formats, and tlb maintenance operations by virtio-iommu.
           If unsure, say N here.
-
-config VIRTIO_IOMMU
-        tristate "Virtio IOMMU driver"
-        depends on VIRTIO
-        depends on (ARM64 || X86)
-        select IOMMU_API
-        select INTERVAL_TREE
-        select ACPI_VIOT if ACPI
-        help
-          Enable support for the Virtio IOMMU device, a paravirtualized IOMMU
-          that manages DMA from endpoints in virtualized environments. The device
-          can act as a proxy for physical IOMMUs (for assigned devices) or as a
-          purely virtual IOMMU for emulated/paravirtualized endpoints.
-
-          Say Y here if you intend to run this kernel as a guest.
 
 config QCOM_SMMU_IRGN0_ERRATA
 	bool "IRGN0 errata"
@@ -536,5 +545,6 @@ config QCOM_SMMU_V2_V3_DISPATCHER
          command queue and STEs and attach a stage-2 page table to match the host page
          table, this allows pKVM to be enabled while using the kernel driver for SMMUv2/3
          instead of the pKVM driver.
+
 
 endif # IOMMU_SUPPORT

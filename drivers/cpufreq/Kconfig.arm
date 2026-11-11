@@ -256,6 +256,30 @@ config ARM_TEGRA194_CPUFREQ
 	depends on ARCH_TEGRA_194_SOC || ARCH_TEGRA_234_SOC || (64BIT && COMPILE_TEST)
 	depends on TEGRA_BPMP
 	default ARCH_TEGRA_194_SOC || ARCH_TEGRA_234_SOC
+	help
+	  This adds CPU frequency driver support for Tegra194 SOCs.
+
+config ARM_TI_CPUFREQ
+	bool "Texas Instruments CPUFreq support"
+	depends on ARCH_OMAP2PLUS || ARCH_K3 || COMPILE_TEST
+	default ARCH_OMAP2PLUS || ARCH_K3
+	help
+	  This driver enables valid OPPs on the running platform based on
+	  values contained within the SoC in use. Enable this in order to
+	  use the cpufreq-dt driver on all Texas Instruments platforms that
+	  provide dt based operating-points-v2 tables with opp-supported-hw
+	  data provided. Required for cpufreq support on AM335x, AM437x,
+	  DRA7x, and AM57x platforms.
+
+config ARM_PXA2xx_CPUFREQ
+	tristate "Intel PXA2xx CPUfreq driver"
+	depends on PXA27x || PXA25x || COMPILE_TEST
+	help
+	  This add the CPUFreq driver support for Intel PXA2xx SOCs.
+
+	  If in doubt, say N.
+
+# Qualcomm (from 6.12 soc-repo)
 config ARM_QCOM_CPUFREQ_HW_DEBUG
 	tristate "QCOM CPUFreq HW debug"
 	depends on ARM_QCOM_CPUFREQ_HW
@@ -275,3 +299,5 @@ config ARM_QCOM_CPUFREQ_THERMAL
 	  thermal limits to HLOS through dedicated mailboxes. This driver
 	  registers for those mailbox notification and informs the scheduler.
 	  Say Y if you want to support these mailbox thermal notifications.
+
+

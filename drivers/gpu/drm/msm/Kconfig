@@ -201,6 +201,8 @@ config DRM_MSM_HDMI_HDCP
 	default y
 	help
 	  Choose this option to enable HDCP state machine
+
+# Qualcomm (from 6.12 soc-repo)
 config DRM_MSM_HELPER
        tristate "DRM MSM HELPER"
        select DRM_DP_AUX_BUS
@@ -212,3 +214,5 @@ config DRM_MSM_HELPER
 
         Allows the display loadable module to link against
         helper functions.
+
+

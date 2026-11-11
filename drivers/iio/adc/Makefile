@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for IIO ADC drivers
+#
 
 obj-$(CONFIG_IIO_ADC_HELPER) += industrialio-adc.o
 
@@ -160,13 +163,8 @@ obj-$(CONFIG_VIPERBOARD_ADC) += viperboard_adc.o
 obj-$(CONFIG_XILINX_AMS) += xilinx-ams.o
 xilinx-xadc-y := xilinx-xadc-core.o xilinx-xadc-events.o
 obj-$(CONFIG_XILINX_XADC) += xilinx-xadc.o
+
+# Qualcomm (from 6.12 soc-repo)
 ccflags-y += -I$(src)
-
 obj-$(CONFIG_QCOM_SPMI_ADC5_GEN3) += qcom-spmi-adc5-gen3.o
-
-obj-$(CONFIG_QCOM_VADC_COMMON) += qcom-vadc-common.o
-
 obj-$(CONFIG_QTI_GLINK_ADC) += qti-glink-adc.o
-
-obj-$(CONFIG_QCOM_SPMI_ADC5) += qcom-spmi-adc5.o
-

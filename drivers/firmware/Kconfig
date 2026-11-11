@@ -298,8 +298,5 @@ source "drivers/firmware/samsung/Kconfig"
 source "drivers/firmware/smccc/Kconfig"
 source "drivers/firmware/tegra/Kconfig"
 source "drivers/firmware/xilinx/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/firmware/arm_scmi/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/firmware/qcom/Kconfig"
-source "$(KCONFIG_EXT_PREFIX)drivers/firmware/arm_ffa/Kconfig"
 
 endmenu

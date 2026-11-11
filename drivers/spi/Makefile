@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for kernel SPI drivers.
+#
 
-ccflags-y += -I$(src)
+ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
 
 # small core, mostly translating board-specific
 # config declarations into driver model code
@@ -172,12 +175,10 @@ obj-$(CONFIG_SPI_SLAVE_SYSTEM_CONTROL)	+= spi-slave-system-control.o
 # SPI offload triggers
 obj-$(CONFIG_SPI_OFFLOAD_TRIGGER_PWM)	+= spi-offload-trigger-pwm.o
 obj-$(CONFIG_SPI_OFFLOAD_TRIGGER_ADI_UTIL_SD) += spi-offload-trigger-adi-util-sigma-delta.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
 obj-$(CONFIG_Q2SPI_MSM_GENI) += q2spi-geni.o
 q2spi-geni-objs += q2spi-gsi.o q2spi-msm-geni.o
-
 obj-$(CONFIG_SPI_MSM_GENI) += spi-msm-geni.o
-
-obj-$(CONFIG_SPI_QCOM_GENI) += spi-geni-qcom.o
-
 obj-$(CONFIG_SPI_QCOM_GENI_MSM) += spi-geni-qcom-msm.o
-

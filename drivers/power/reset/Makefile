@@ -35,18 +35,15 @@ obj-$(CONFIG_POWER_RESET_KEYSTONE) += keystone-reset.o
 obj-$(CONFIG_POWER_RESET_SYSCON) += syscon-reboot.o
 obj-$(CONFIG_POWER_RESET_SYSCON_POWEROFF) += syscon-poweroff.o
 obj-$(CONFIG_POWER_RESET_RMOBILE) += rmobile-reset.o
-
-ccflags-y += -I$(src)
-
-obj-$(CONFIG_POWER_RESET_QCOM_DOWNLOAD_MODE) += qcom-dload-mode.o
-
-obj-$(CONFIG_POWER_RESET_QCOM_PON) += qcom-pon.o
-
-obj-$(CONFIG_POWER_RESET_QCOM_REBOOT_REASON) += qcom-reboot-reason.o
-
 obj-$(CONFIG_REBOOT_MODE) += reboot-mode.o
+obj-$(CONFIG_SYSCON_REBOOT_MODE) += syscon-reboot-mode.o
+obj-$(CONFIG_POWER_RESET_SC27XX) += sc27xx-poweroff.o
+obj-$(CONFIG_NVMEM_REBOOT_MODE) += nvmem-reboot-mode.o
+obj-$(CONFIG_POWER_MLXBF) += pwr-mlxbf.o
 
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_POWER_RESET_QCOM_DOWNLOAD_MODE) += qcom-dload-mode.o
+obj-$(CONFIG_POWER_RESET_QCOM_REBOOT_REASON) += qcom-reboot-reason.o
 obj-$(CONFIG_POWER_RESET_QCOM) += msm-poweroff.o
-
 obj-$(CONFIG_POWER_RESET_QCOM_VM) += msm-vm-poweroff.o
-

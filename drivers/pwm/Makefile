@@ -76,7 +76,6 @@ obj-$(CONFIG_PWM_VISCONTI)	+= pwm-visconti.o
 obj-$(CONFIG_PWM_VT8500)	+= pwm-vt8500.o
 obj-$(CONFIG_PWM_XILINX)	+= pwm-xilinx.o
 
+# Qualcomm (from 6.12 soc-repo)
 ccflags-y += -I$(src)
-
 obj-$(CONFIG_PWM_QCOM) += pwm-qcom.o
-

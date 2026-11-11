@@ -1,15 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for nvmem drivers.
+#
 
-ccflags-y += -I$(src)
-
-obj-$(CONFIG_NVMEM_SPMI_SDAM) += nvmem_qcom-spmi-sdam.o
-nvmem_qcom-spmi-sdam-objs += qcom-spmi-sdam.o
-
-obj-$(CONFIG_NVMEM_QCOM_QFPROM) += nvmem_qfprom.o
-nvmem_qfprom-objs += qfprom.o
-
-obj-$(CONFIG_NVMEM_LAYOUT_QCOM_ETH_MAC) += nvmem_layout_qcom_eth_mac.o
-nvmem_layout_qcom_eth_mac-objs += layouts/qcom-eth-mac.o
+obj-$(CONFIG_NVMEM)		+= nvmem_core.o
+nvmem_core-y			:= core.o
+obj-$(CONFIG_NVMEM_LAYOUTS)	+= nvmem_layouts.o
+nvmem_layouts-y			:= layouts.o
+obj-y				+= layouts/
 
 # Devices
 obj-$(CONFIG_NVMEM_AN8855_EFUSE)	+= nvmem-an8855-efuse.o
@@ -95,3 +93,8 @@ obj-$(CONFIG_NVMEM_ZYNQMP)		+= nvmem_zynqmp_nvmem.o
 nvmem_zynqmp_nvmem-y			:= zynqmp_nvmem.o
 obj-$(CONFIG_NVMEM_QORIQ_EFUSE)		+= nvmem-qoriq-efuse.o
 nvmem-qoriq-efuse-y			:= qoriq-efuse.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_NVMEM_LAYOUT_QCOM_ETH_MAC) += nvmem_layout_qcom_eth_mac.o
+nvmem_layout_qcom_eth_mac-objs += layouts/qcom-eth-mac.o

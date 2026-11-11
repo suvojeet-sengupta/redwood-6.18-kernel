@@ -29,6 +29,7 @@ config MHI_BUS_PCI_GENERIC
 	  This driver provides MHI PCI controller driver for devices such as
 	  Qualcomm SDX55 based PCIe modems.
 
+# Qualcomm (from 6.12 soc-repo)
 config MHI_BUS_MISC
 	bool "Support for miscellaneous MHI features"
     depends on MHI_BUS
@@ -37,3 +38,5 @@ config MHI_BUS_MISC
       introduction of a list of controllers for debug using ramdumps and
       other features not present upstream such as Dynamic Resource Vote,
       SFR parsing using RDDM dumps, scanning for the RDDM cookie and more.
+
+

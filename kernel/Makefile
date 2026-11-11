@@ -207,3 +207,7 @@ $(obj)/kheaders.md5: $(obj)/kheaders-srclist FORCE
 	$(call filechk,kheaders_md5sum)
 
 clean-files := kheaders.md5 kheaders-srclist kheaders-objlist
+
+# Qualcomm (from 6.12 soc-repo)
+obj-y += sched/walt/
+obj-$(CONFIG_MSM_SYSSTATS) += msm_sysstats.o

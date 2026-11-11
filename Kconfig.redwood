@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Qualcomm Kconfigs from the 6.12 soc-repo Kconfig.msm that 6.18 does not source
+
+menu "Qualcomm SoC drivers (redwood)"
+
+source "arch/arm64/gunyah/Kconfig"
+source "drivers/eom/Kconfig"
+source "drivers/eom/pcie/Kconfig"
+source "drivers/powercap/qcom/Kconfig"
+source "kernel/sched/walt/Kconfig"
+
+endmenu

@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for multifunction miscellaneous devices
+#
 
 88pm860x-objs			:= 88pm860x-core.o 88pm860x-i2c.o
 obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
@@ -20,9 +23,10 @@ obj-$(CONFIG_MFD_ENE_KB3930)	+= ene-kb3930.o
 obj-$(CONFIG_MFD_EXYNOS_LPASS)	+= exynos-lpass.o
 obj-$(CONFIG_MFD_GATEWORKS_GSC)	+= gateworks-gsc.o
 obj-$(CONFIG_MFD_MACSMC)	+= macsmc.o
-ccflags-y += -I$(src)
 
-obj-$(CONFIG_MFD_I2C_PMIC) += qcom-i2c-pmic.o
+obj-$(CONFIG_MFD_TI_LP873X)	+= lp873x.o
+obj-$(CONFIG_MFD_TI_LP87565)	+= lp87565.o
+obj-$(CONFIG_MFD_TI_AM335X_TSCADC)	+= ti_am335x_tscadc.o
 
 obj-$(CONFIG_MFD_STMPE)		+= stmpe.o
 obj-$(CONFIG_STMPE_I2C)		+= stmpe-i2c.o
@@ -30,9 +34,8 @@ obj-$(CONFIG_STMPE_SPI)		+= stmpe-spi.o
 obj-$(CONFIG_MFD_SUN6I_PRCM)	+= sun6i-prcm.o
 obj-$(CONFIG_MFD_TC3589X)	+= tc3589x.o
 obj-$(CONFIG_MFD_TQMX86)	+= tqmx86.o
-obj-$(CONFIG_MFD_SPMI_PMIC) += qcom-spmi-pmic.o
 
-obj-$(CONFIG_MFD_QCOM_PM8008) += qcom-pm8008.o
+obj-$(CONFIG_MFD_LOCHNAGAR)	+= lochnagar-i2c.o
 
 arizona-objs			:= arizona-core.o arizona-irq.o
 obj-$(CONFIG_MFD_ARIZONA)	+= arizona.o
@@ -300,3 +303,7 @@ obj-$(CONFIG_MFD_RSMU_SPI)	+= rsmu_spi.o rsmu_core.o
 obj-$(CONFIG_MFD_UPBOARD_FPGA)	+= upboard-fpga.o
 
 obj-$(CONFIG_MFD_LOONGSON_SE)	+= loongson-se.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_MFD_I2C_PMIC) += qcom-i2c-pmic.o

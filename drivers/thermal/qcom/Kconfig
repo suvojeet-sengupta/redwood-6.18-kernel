@@ -10,6 +10,17 @@ config QCOM_TSENS
 	  Also able to set threshold temperature for both hot and cold and update
 	  when a threshold is reached.
 
+config QCOM_SPMI_ADC_TM5
+	tristate "Qualcomm SPMI PMIC Thermal Monitor ADC5"
+	depends on OF && SPMI && IIO
+	select REGMAP_SPMI
+	select QCOM_VADC_COMMON
+	help
+	  This enables the thermal driver for the ADC thermal monitoring
+	  device. It shows up as a thermal zone with multiple trip points.
+	  Thermal client sets threshold temperature for both warm and cool and
+	  gets updated when a threshold is reached.
+
 config QCOM_SPMI_TEMP_ALARM
 	tristate "Qualcomm SPMI PMIC Temperature Alarm"
 	depends on OF && SPMI && IIO
@@ -24,6 +35,7 @@ config QCOM_SPMI_TEMP_ALARM
 config QCOM_LMH
 	tristate "Qualcomm Limits Management Hardware"
 	depends on ARCH_QCOM || COMPILE_TEST
+	select QCOM_SCM
 	help
 	  This enables initialization of Qualcomm limits management
 	  hardware(LMh). LMh allows for hardware-enforced mitigation for cpus based on
@@ -31,6 +43,7 @@ config QCOM_LMH
 	  LMh is configured in the firmware and this feature need not be enabled.
 	  However, on certain SoCs like sdm845 LMh has to be configured from kernel.
 
+# Qualcomm (from 6.12 soc-repo)
 config QTI_QMI_SENSOR_V2
 	tristate "QTI QMI TS V2 sensor driver"
 	depends on THERMAL_OF
@@ -242,17 +255,6 @@ config QTI_THERMAL_LMH_STATS
 	   interface and enables different statistics of hardware throttling
 	   to userspace via sysfs interface.
 
-config QCOM_SPMI_ADC_TM5
-        tristate "Qualcomm SPMI PMIC Thermal Monitor ADC5"
-        depends on OF && SPMI && IIO
-        select REGMAP_SPMI
-        select QCOM_VADC_COMMON
-        help
-           This enables the thermal driver for the ADC thermal monitoring
-           device. It shows up as a thermal zone with multiple trip points.
-           Thermal client sets threshold temperature for both warm and cool and
-           gets updated when a threshold is reached.
-
 config REGULATOR_COOLING_DEVICE
 	tristate "Regulator voltage floor cooling device"
 	depends on REGULATOR && THERMAL_OF
@@ -281,16 +283,6 @@ config QTI_QMI_SENSOR
 	   These sensors can take thresholds and notify the thermal
 	   framework when the threshold is reached.
 
-config GENERIC_ADC_THERMAL
-	tristate "Generic ADC based thermal sensor"
-	depends on IIO
-	help
-	   This enabled a thermal sysfs driver for the temperature sensor
-	   which is connected to the General Purpose ADC. The ADC channel
-	   is read via IIO framework and the channel information is provided
-	   to this driver. This driver reports the temperature by reading ADC
-	   channel and converts it to temperature based on lookup table.
-
 config QTI_AOP_REG_COOLING_DEVICE
 	tristate "QTI AOP Regulator cooling device"
 	depends on THERMAL_OF && MSM_QMP
@@ -299,3 +291,5 @@ config QTI_AOP_REG_COOLING_DEVICE
 	  device will be used by QTI chipset to place a floor voltage
 	  restriction at low temperatures. The cooling device will message
 	  the AOP using mail box to establish the floor voltage.
+
+

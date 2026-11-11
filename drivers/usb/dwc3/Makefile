@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
+# define_trace.h needs to know how to find our header
+CFLAGS_trace.o				:= -I$(src)
 
-ccflags-y += -I$(src)
+obj-$(CONFIG_USB_DWC3)			+= dwc3.o
 
-obj-$(CONFIG_USB_DWC3_MSM) += dwc3-msm.o
-dwc3-msm-objs += debug_ipc.o dwc3-msm-core.o dwc3-msm-ops.o
+dwc3-y					:= core.o
 
 ifneq ($(CONFIG_TRACING),)
 	dwc3-y				+= trace.o
@@ -57,3 +58,8 @@ obj-$(CONFIG_USB_DWC3_XILINX)		+= dwc3-xilinx.o
 obj-$(CONFIG_USB_DWC3_OCTEON)		+= dwc3-octeon.o
 obj-$(CONFIG_USB_DWC3_RTK)		+= dwc3-rtk.o
 obj-$(CONFIG_USB_DWC3_GENERIC_PLAT)	+= dwc3-generic-plat.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_USB_DWC3_MSM) += dwc3-msm.o
+dwc3-msm-objs += debug_ipc.o dwc3-msm-core.o dwc3-msm-ops.o

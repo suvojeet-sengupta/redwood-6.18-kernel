@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0
+# Generic MAILBOX API
 
-ccflags-y += -I$(src)
+obj-$(CONFIG_MAILBOX)		+= mailbox.o
 
-obj-$(CONFIG_MSM_QMP) += msm_qmp.o
+obj-$(CONFIG_MAILBOX_TEST)	+= mailbox-test.o
 
-obj-$(CONFIG_QCOM_IPCC) += qcom-ipcc.o
+obj-$(CONFIG_ARM_MHU)	+= arm_mhu.o arm_mhu_db.o
 
-obj-$(CONFIG_QCOM_APCS_IPC) += qcom-apcs-ipc-mailbox.o
+obj-$(CONFIG_ARM_MHU_V2)	+= arm_mhuv2.o
 
 obj-$(CONFIG_ARM_MHU_V3)	+= arm_mhuv3.o
 
@@ -81,3 +82,7 @@ obj-$(CONFIG_CIX_MBOX)	+= cix-mailbox.o
 obj-$(CONFIG_BCM74110_MAILBOX)	+= bcm74110-mailbox.o
 
 obj-$(CONFIG_RISCV_SBI_MPXY_MBOX)	+= riscv-sbi-mpxy-mbox.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_MSM_QMP) += msm_qmp.o

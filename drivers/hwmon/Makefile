@@ -1,10 +1,28 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for sensor chip drivers.
+#
 
-ccflags-y += -I$(src)
+obj-$(CONFIG_HWMON)		+= hwmon.o
+obj-$(CONFIG_HWMON_VID)		+= hwmon-vid.o
 
-obj-$(CONFIG_HWMON) += hwmon.o
+# ACPI drivers
+obj-$(CONFIG_SENSORS_ACPI_POWER) += acpi_power_meter.o
+obj-$(CONFIG_SENSORS_ATK0110)	+= asus_atk0110.o
+obj-$(CONFIG_SENSORS_ASUS_EC)	+= asus-ec-sensors.o
+obj-$(CONFIG_SENSORS_ASUS_WMI)	+= asus_wmi_sensors.o
+obj-$(CONFIG_SENSORS_HP_WMI)	+= hp-wmi-sensors.o
 
-obj-$(CONFIG_SENSORS_QTI_AMOLED_ECM) += qti_amoled_ecm.o
+# Native drivers
+# asb100, then w83781d go first, as they can override other drivers' addresses.
+obj-$(CONFIG_SENSORS_ASB100)	+= asb100.o
+obj-$(CONFIG_SENSORS_W83627HF)	+= w83627hf.o
+obj-$(CONFIG_SENSORS_W83773G)	+= w83773g.o
+obj-$(CONFIG_SENSORS_W83792D)	+= w83792d.o
+obj-$(CONFIG_SENSORS_W83793)	+= w83793.o
+obj-$(CONFIG_SENSORS_W83795)	+= w83795.o
+obj-$(CONFIG_SENSORS_W83781D)	+= w83781d.o
+obj-$(CONFIG_SENSORS_W83791D)	+= w83791d.o
 
 obj-$(CONFIG_SENSORS_ABITUGURU)	+= abituguru.o
 obj-$(CONFIG_SENSORS_ABITUGURU3)+= abituguru3.o
@@ -226,5 +244,14 @@ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
 obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
 obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
 obj-$(CONFIG_SENSORS_XGENE)	+= xgene-hwmon.o
-obj-$(CONFIG_SENSORS_QTI_BTL) += qti_btl.o
 
+obj-$(CONFIG_SENSORS_OCC)	+= occ/
+obj-$(CONFIG_SENSORS_PECI)	+= peci/
+obj-$(CONFIG_PMBUS)		+= pmbus/
+
+ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_SENSORS_QTI_AMOLED_ECM) += qti_amoled_ecm.o
+obj-$(CONFIG_SENSORS_QTI_BTL) += qti_btl.o

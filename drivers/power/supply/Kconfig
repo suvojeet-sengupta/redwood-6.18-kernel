@@ -1,4 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0-only
+menuconfig POWER_SUPPLY
+	bool "Power supply class support"
+	help
+	  Say Y here to enable power supply class support. This allows
+	  power supply (batteries, AC, USB) monitoring by userspace
+	  via sysfs and uevent (if available) and/or APM kernel interface
+	  (if selected below).
+
 if POWER_SUPPLY
 
 config POWER_SUPPLY_DEBUG
@@ -689,18 +697,6 @@ config CHARGER_MT6370
 
 	  This driver can also be built as a module. If so, the module
 	  will be called "mt6370-charger".
-config QTI_BATTERY_CHARGER
-	tristate "QTI Glink battery charger"
-	depends on QTI_PMIC_GLINK && EXTCON && TYPEC
-	help
-	  Say Y here to enable Qualcomm Technologies, Inc. battery charger
-	  driver which interfaces with the charger firmware running on the
-	  remote subsystem (e.g. DSP) by communicating over PMIC Glink channel
-	  and provides information about the battery, USB and wireless charging
-	  by exposing them as power supply devices.
-
-	  To compile the driver as a module, choose M here: the module will be
-	  called qti_battery_charger.
 
 config CHARGER_QCOM_SMBB
 	tristate "Qualcomm Switch-Mode Battery Charger and Boost"
@@ -992,13 +988,75 @@ config FUEL_GAUGE_STC3117
 
 config CHARGER_UCS1002
 	tristate "Microchip UCS1002 USB Port Power Controller"
-config BATTERY_MAX1720X
-	tristate "Maxim MAX17201/MAX17215 Fuel Gauge"
 	depends on I2C
+	depends on OF
+	depends on REGULATOR
 	select REGMAP_I2C
 	help
-	  MAX1720x is fuel-gauge systems for lithium-ion (Li+) batteries
-	  in handheld and portable equipment.
+	  Say Y to enable support for Microchip UCS1002 Programmable
+	  USB Port Power Controller with Charger Emulation.
+
+config CHARGER_BD99954
+	tristate "ROHM bd99954 charger driver"
+	depends on I2C
+	select LINEAR_RANGES
+	help
+	  Say Y here to enable support for getting battery and charger
+	  information and altering charger configurations from the ROHM
+	  BD99954 charger IC.
+
+config CHARGER_WILCO
+	tristate "Wilco EC based charger for ChromeOS"
+	depends on WILCO_EC
+	help
+	  Say Y here to enable control of the charging routines performed
+	  by the Embedded Controller on the Chromebook named Wilco. Further
+	  information can be found in
+	  Documentation/ABI/testing/sysfs-class-power-wilco
+
+config RN5T618_POWER
+	tristate "RN5T618 charger/fuel gauge support"
+	depends on MFD_RN5T618
+	depends on RN5T618_ADC
+	depends on IIO
+	help
+	  Say Y here to have support for RN5T618 PMIC family fuel gauge and charger.
+	  This driver can also be built as a module. If so, the module will be
+	  called rn5t618_power.
+
+config BATTERY_ACER_A500
+	tristate "Acer Iconia Tab A500 battery driver"
+	depends on MFD_ACER_A500_EC
+	help
+	  Say Y to include support for Acer Iconia Tab A500 battery fuel gauge.
+
+config BATTERY_SURFACE
+	tristate "Battery driver for 7th-generation Microsoft Surface devices"
+	depends on SURFACE_AGGREGATOR_REGISTRY
+	help
+	  Driver for battery devices connected via/managed by the Surface System
+	  Aggregator Module (SSAM).
+
+	  This driver provides battery-information and -status support for
+	  Surface devices where said data is not exposed via the standard ACPI
+	  devices. On those models (7th-generation), battery-information is
+	  instead handled directly via SSAM client devices and this driver.
+
+	  Say M or Y here to include battery status support for 7th-generation
+	  Microsoft Surface devices, i.e. Surface Pro 7, Surface Laptop 3,
+	  Surface Book 3, and Surface Laptop Go.
+
+config CHARGER_SURFACE
+	tristate "AC driver for 7th-generation Microsoft Surface devices"
+	depends on SURFACE_AGGREGATOR_REGISTRY
+	help
+	  Driver for AC devices connected via/managed by the Surface System
+	  Aggregator Module (SSAM).
+
+	  This driver provides AC-information and -status support for Surface
+	  devices where said data is not exposed via the standard ACPI devices.
+	  On those models (7th-generation), AC-information is instead handled
+	  directly via a SSAM client device and this driver.
 
 	  Say M or Y here to include AC status support for 7th-generation
 	  Microsoft Surface devices, i.e. Surface Pro 7, Surface Laptop 3,
@@ -1019,8 +1077,40 @@ config BATTERY_UG3105
 	  Since Linux does not monitor coulomb-counter changes while the
 	  device is off or suspended, the functionality of this driver is
 	  limited to reporting capacity only.
-	  Say Y here to enable support for the MAX17201/MAX17335 standalone
-	  battery gas-gauge.
+
+config CHARGER_QCOM_SMB2
+	tristate "Qualcomm PMI8998 PMIC charger driver"
+	depends on MFD_SPMI_PMIC
+	depends on IIO
+	help
+	  Say Y here to enable the Qualcomm PMIC Charger driver. This
+	  adds support for the SMB2 switch mode battery charger found
+	  in PMI8998 and related PMICs.
+
+config FUEL_GAUGE_MM8013
+	tristate "Mitsumi MM8013 fuel gauge driver"
+	depends on I2C
+	select REGMAP_I2C
+	help
+	  Say Y here to enable the Mitsumi MM8013 fuel gauge driver.
+	  It enables the monitoring of many battery parameters, including
+	  the state of charge, temperature, cycle count, actual and design
+	  capacity, etc.
+
+
+# Qualcomm (from 6.12 soc-repo)
+config QTI_BATTERY_CHARGER
+	tristate "QTI Glink battery charger"
+	depends on QTI_PMIC_GLINK && EXTCON && TYPEC
+	help
+	  Say Y here to enable Qualcomm Technologies, Inc. battery charger
+	  driver which interfaces with the charger firmware running on the
+	  remote subsystem (e.g. DSP) by communicating over PMIC Glink channel
+	  and provides information about the battery, USB and wireless charging
+	  by exposing them as power supply devices.
+
+	  To compile the driver as a module, choose M here: the module will be
+	  called qti_battery_charger.
 
 config QTI_CHARGER_NFC_VREG
 	bool "Allow client to vote on Charger reverse boost regulator"
@@ -1032,6 +1122,6 @@ config QTI_CHARGER_NFC_VREG
 	  to manage their power supply requirements through the charger’s
 	  reverse boost regulator.
 
-source "$(KCONFIG_EXT_PREFIX)drivers/power/supply/qcom/Kconfig"
+source "drivers/power/supply/qcom/Kconfig"
 
 endif # POWER_SUPPLY

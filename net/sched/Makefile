@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for the Linux Traffic Control Unit.
+#
 
-ccflags-y += -I$(src)
+obj-y	:= sch_generic.o sch_mq.o
 
 obj-$(CONFIG_INET)		+= sch_frag.o
 obj-$(CONFIG_NET_SCHED)		+= sch_api.o sch_blackhole.o
@@ -61,12 +64,25 @@ obj-$(CONFIG_NET_SCH_ETF)	+= sch_etf.o
 obj-$(CONFIG_NET_SCH_TAPRIO)	+= sch_taprio.o
 obj-$(CONFIG_NET_SCH_BPF)	+= bpf_qdisc.o
 obj-$(CONFIG_NET_SCH_DUALPI2)	+= sch_dualpi2.o
-obj-$(CONFIG_NET_SCH_MQPRIO) += sch_mqprio.o
-sch_mqprio-objs += sch_mqprio.o sch_mqprio_lib.o
 
-obj-$(CONFIG_NET_SCH_CBS) += sch_cbs.o
+obj-$(CONFIG_NET_CLS_U32)	+= cls_u32.o
+obj-$(CONFIG_NET_CLS_ROUTE4)	+= cls_route.o
+obj-$(CONFIG_NET_CLS_FW)	+= cls_fw.o
+obj-$(CONFIG_NET_CLS_BASIC)	+= cls_basic.o
+obj-$(CONFIG_NET_CLS_FLOW)	+= cls_flow.o
+obj-$(CONFIG_NET_CLS_CGROUP)	+= cls_cgroup.o
+obj-$(CONFIG_NET_CLS_BPF)	+= cls_bpf.o
+obj-$(CONFIG_NET_CLS_FLOWER)	+= cls_flower.o
+obj-$(CONFIG_NET_CLS_MATCHALL)	+= cls_matchall.o
+obj-$(CONFIG_NET_EMATCH)	+= ematch.o
+obj-$(CONFIG_NET_EMATCH_CMP)	+= em_cmp.o
+obj-$(CONFIG_NET_EMATCH_NBYTE)	+= em_nbyte.o
+obj-$(CONFIG_NET_EMATCH_U32)	+= em_u32.o
+obj-$(CONFIG_NET_EMATCH_META)	+= em_meta.o
+obj-$(CONFIG_NET_EMATCH_TEXT)	+= em_text.o
+obj-$(CONFIG_NET_EMATCH_CANID)	+= em_canid.o
+obj-$(CONFIG_NET_EMATCH_IPSET)	+= em_ipset.o
+obj-$(CONFIG_NET_EMATCH_IPT)	+= em_ipt.o
 
-obj-$(CONFIG_NET_CLS_FLOWER) += cls_flower.o
-
-obj-$(CONFIG_NET_SCH_ETF) += sch_etf.o
-
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)

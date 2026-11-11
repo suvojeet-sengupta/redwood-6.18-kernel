@@ -22,6 +22,8 @@ config DMABUF_HEAPS_CMA_LEGACY
 	  from the CMA area's devicetree node, or "reserved" if the area is not
 	  defined in the devicetree. This uses the same underlying allocator as
 	  CONFIG_DMABUF_HEAPS_CMA.
+
+# Qualcomm (from 6.12 soc-repo)
 config QCOM_DMABUF_HEAPS
 	tristate "QCOM DMA-BUF Heaps"
 	depends on DMABUF_HEAPS
@@ -142,4 +144,5 @@ config QCOM_DMABUF_HEAPS_SC_TCM
 	  This is backed by the SC TCM memory which gets
 	  registered to this heap during the initialization.
 	  If in doubt, say N here.
+
 

@@ -1,8 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for RTC class/drivers.
+#
 
-ccflags-y += -I$(src)
+ccflags-$(CONFIG_RTC_DEBUG)	:= -DDEBUG
 
-obj-$(CONFIG_RTC_DRV_PM8XXX) += rtc-pm8xxx.o
+obj-$(CONFIG_RTC_LIB)		+= lib.o
+obj-$(CONFIG_RTC_CLASS)		+= rtc-core.o
+obj-$(CONFIG_RTC_MC146818_LIB)	+= rtc-mc146818-lib.o
+rtc-core-y			:= class.o interface.o
 
 rtc-core-$(CONFIG_RTC_NVMEM)		+= nvmem.o
 rtc-core-$(CONFIG_RTC_INTF_DEV)		+= dev.o
@@ -191,3 +197,6 @@ obj-$(CONFIG_RTC_DRV_WM8350)	+= rtc-wm8350.o
 obj-$(CONFIG_RTC_DRV_X1205)	+= rtc-x1205.o
 obj-$(CONFIG_RTC_DRV_XGENE)	+= rtc-xgene.o
 obj-$(CONFIG_RTC_DRV_ZYNQMP)	+= rtc-zynqmp.o
+
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)

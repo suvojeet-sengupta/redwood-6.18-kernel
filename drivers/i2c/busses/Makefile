@@ -1,8 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0
+#
+# Makefile for the i2c bus drivers.
+#
 
-ccflags-y += -I$(src)
+# ACPI drivers
+obj-$(CONFIG_I2C_SCMI)		+= i2c-scmi.o
 
-obj-$(CONFIG_I2C_MSM_GENI) += i2c-msm-geni.o
+# Auxiliary I2C/SMBus modules
+obj-$(CONFIG_I2C_CCGX_UCSI)	+= i2c-ccgx-ucsi.o
 
 # PC SMBus host controller drivers
 obj-$(CONFIG_I2C_ALI1535)	+= i2c-ali1535.o
@@ -23,9 +28,10 @@ obj-$(CONFIG_I2C_SIS96X)	+= i2c-sis96x.o
 obj-$(CONFIG_I2C_VIA)		+= i2c-via.o
 obj-$(CONFIG_I2C_VIAPRO)	+= i2c-viapro.o
 obj-$(CONFIG_I2C_ZHAOXIN)	+= i2c-viai2c-zhaoxin.o i2c-viai2c-common.o
-obj-$(CONFIG_I2C_QCOM_GENI_MSM) += i2c-qcom-geni-msm.o
 
-obj-$(CONFIG_I2C_QCOM_GENI) += i2c-qcom-geni.o
+# Mac SMBus host controller drivers
+obj-$(CONFIG_I2C_HYDRA)		+= i2c-hydra.o
+obj-$(CONFIG_I2C_POWERMAC)	+= i2c-powermac.o
 
 # Embedded system I2C/SMBus host controller drivers
 obj-$(CONFIG_I2C_ALTERA)	+= i2c-altera.o
@@ -157,5 +163,8 @@ obj-$(CONFIG_I2C_FSI)		+= i2c-fsi.o
 obj-$(CONFIG_I2C_VIRTIO)	+= i2c-virtio.o
 
 ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
-obj-$(CONFIG_I2C_VIRTIO) += i2c-virtio.o
 
+# Qualcomm (from 6.12 soc-repo)
+ccflags-y += -I$(src)
+obj-$(CONFIG_I2C_MSM_GENI) += i2c-msm-geni.o
+obj-$(CONFIG_I2C_QCOM_GENI_MSM) += i2c-qcom-geni-msm.o

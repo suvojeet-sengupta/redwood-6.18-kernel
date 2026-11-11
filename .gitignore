@@ -13,6 +13,7 @@
 .*
 *.a
 *.asn1.[ch]
+*.bc
 *.bin
 *.bz2
 *.c.[012]*.*
@@ -49,7 +50,6 @@
 *.so.dbg
 *.su
 *.symtypes
-*.symversions
 *.tab.[ch]
 *.tar
 *.xz
@@ -74,6 +74,7 @@ modules.order
 /Module.markers
 /modules.builtin
 /modules.builtin.modinfo
+/modules.builtin.ranges
 /modules.nsdeps
 
 #
@@ -106,6 +107,7 @@ modules.order
 # We don't want to ignore the following even if they are dot-files
 #
 !.clang-format
+!.clippy.toml
 !.cocciconfig
 !.editorconfig
 !.get_maintainer.ignore
@@ -148,7 +150,6 @@ GTAGS
 # id-utils files
 ID
 
-*.orig
 *~
 \#*#
 
@@ -178,16 +179,11 @@ x509.genkey
 # Clang's compilation database file
 compile_commands.json
 
-# generated defconfigs
-arch/*/configs/vendor/*_defconfig
-
-# vendor device tree directories
-arch/*/boot/dts/vendor
-
 # Documentation toolchain
 sphinx_*/
 
 # Rust analyzer configuration
 /rust-project.json
 
-git_fetch_and_checkout.sh
+# bc language scripts (not LLVM bitcode)
+!kernel/time/timeconst.bc
