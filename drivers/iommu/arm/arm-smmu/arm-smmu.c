@@ -119,6 +119,7 @@ static void arm_smmu_destroy_domain_context(struct arm_smmu_domain *smmu_domain)
 
 static int arm_smmu_setup_default_domain(struct device *dev,
 				struct iommu_domain *domain);
+static void smmu_trace_dump(struct arm_smmu_domain *dom, unsigned long far);
 static void __arm_smmu_flush_iotlb_all(struct iommu_domain *domain, bool force);
 
 static inline int arm_smmu_rpm_get(struct arm_smmu_device *smmu)
@@ -1017,6 +1018,8 @@ static irqreturn_t arm_smmu_context_fault(int irq, void *dev)
 		if (__ratelimit(&_rs)) {
 			print_fault_regs(smmu_domain, smmu, idx);
 			arm_smmu_verify_fault(smmu_domain, smmu, idx);
+			smmu_trace_dump(smmu_domain,
+					arm_smmu_cb_readq(smmu, idx, ARM_SMMU_CB_FAR));
 		}
 		BUG_ON(!smmu_domain->fault_model.non_fatal);
 	}
@@ -2473,6 +2476,59 @@ static struct iommu_domain arm_smmu_blocked_domain = {
 	.ops = &arm_smmu_blocked_ops,
 };
 
+
+/*
+ * Bring-up: remember recent map/unmap calls so a context fault can say who
+ * mapped the faulting IOVA and with which permissions.
+ */
+#include <linux/stacktrace.h>
+#define SMMU_TRACE_N	512
+struct smmu_trace_rec {
+	struct arm_smmu_domain *dom;
+	unsigned long iova;
+	size_t size;
+	int prot;		/* -1 for unmap */
+	unsigned int nr;
+	unsigned long stack[10];
+};
+static struct smmu_trace_rec smmu_trace[SMMU_TRACE_N];
+static atomic_t smmu_trace_idx = ATOMIC_INIT(0);
+
+static void smmu_trace_add(struct arm_smmu_domain *dom, unsigned long iova,
+			   size_t size, int prot)
+{
+	unsigned int i = (unsigned int)atomic_inc_return(&smmu_trace_idx) % SMMU_TRACE_N;
+	struct smmu_trace_rec *r = &smmu_trace[i];
+
+	r->dom = dom;
+	r->iova = iova;
+	r->size = size;
+	r->prot = prot;
+	r->nr = stack_trace_save(r->stack, ARRAY_SIZE(r->stack), 2);
+}
+
+static void smmu_trace_dump(struct arm_smmu_domain *dom, unsigned long far)
+{
+	unsigned int last = (unsigned int)atomic_read(&smmu_trace_idx);
+	unsigned int k, j, hits = 0;
+
+	pr_err("smmu-trace: looking for %#lx (%u records)\n", far, last);
+	for (k = 0; k < SMMU_TRACE_N && hits < 6; k++) {
+		struct smmu_trace_rec *r = &smmu_trace[(last - k) % SMMU_TRACE_N];
+
+		if (!r->size || far < r->iova || far >= r->iova + r->size)
+			continue;
+		hits++;
+		pr_err("smmu-trace: %s iova %#lx size %#zx prot %#x %s domain\n",
+		       r->prot < 0 ? "UNMAP" : "MAP", r->iova, r->size,
+		       r->prot < 0 ? 0 : r->prot, r->dom == dom ? "same" : "other");
+		for (j = 0; j < r->nr; j++)
+			pr_err("smmu-trace:    %pS\n", (void *)r->stack[j]);
+	}
+	if (!hits)
+		pr_err("smmu-trace: no record covers it\n");
+}
+
 static int arm_smmu_map_pages(struct iommu_domain *domain, unsigned long iova,
 			      phys_addr_t paddr, size_t pgsize, size_t pgcount,
 			      int prot, gfp_t gfp, size_t *mapped)
@@ -2491,6 +2547,8 @@ static int arm_smmu_map_pages(struct iommu_domain *domain, unsigned long iova,
 
 	gfp = arm_smmu_domain_gfp_flags(smmu_domain);
 	ret = ops->map_pages(ops, iova, paddr, pgsize, pgcount, prot, gfp, mapped);
+	if (!ret)
+		smmu_trace_add(smmu_domain, iova, pgsize * pgcount, prot);
 
 	arm_smmu_rpm_put(smmu);
 	if (!ret)
@@ -2511,8 +2569,20 @@ static size_t arm_smmu_unmap_pages(struct iommu_domain *domain, unsigned long io
 		return 0;
 
 	ret = ops->unmap_pages(ops, iova, pgsize, pgcount, gather);
-	if (ret)
+	if (ret) {
 		trace_unmap_pages(smmu_domain, iova, pgsize, pgcount);
+		smmu_trace_add(smmu_domain, iova, ret, -1);
+		/*
+		 * Bring-up: invalidate the context's TLB right away. On 6.18 an
+		 * IOVA unmapped read-only and mapped again writable kept its
+		 * stale read-only TLB entry, and dwc3 took permission faults.
+		 */
+		if (smmu_domain->flush_ops && smmu_domain->smmu) {
+			arm_smmu_rpm_get(smmu_domain->smmu);
+			smmu_domain->flush_ops->tlb_flush_all(smmu_domain);
+			arm_smmu_rpm_put(smmu_domain->smmu);
+		}
+	}
 
 	return ret;
 }
