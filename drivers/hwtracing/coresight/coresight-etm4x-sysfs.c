@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright(C) 2015 Linaro Limited. All rights reserved.
- * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * Author: Mathieu Poirier <mathieu.poirier@linaro.org>
  */
 
@@ -2423,14 +2422,7 @@ struct etmv4_reg {
 static void do_smp_cross_read(void *data)
 {
 	struct etmv4_reg *reg = data;
-	struct coresight_device *csdev = reg->csdev;
-	struct etmv4_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 
-	/*
-	 * Make sure OS lock is unlocked before accessing
-	 * the ETMv4 trace core registers
-	 */
-	etm4_os_unlock(drvdata);
 	reg->data = etm4x_relaxed_read32(&reg->csdev->access, reg->offset);
 }
 
@@ -2463,14 +2455,10 @@ static ssize_t coresight_etm4x_reg_show(struct device *dev,
 {
 	u32 val, offset;
 	struct etmv4_drvdata *drvdata = dev_get_drvdata(dev->parent);
-	int ret;
 
 	offset = coresight_etm4x_attr_to_offset(d_attr);
 
-	ret = pm_runtime_resume_and_get(dev->parent);
-	if (ret < 0)
-		return ret;
-
+	pm_runtime_get_sync(dev->parent);
 	val = etmv4_cross_read(drvdata, offset);
 	pm_runtime_put_sync(dev->parent);
 

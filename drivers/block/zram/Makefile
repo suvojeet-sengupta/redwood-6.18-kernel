@@ -11,6 +11,3 @@ zram-$(CONFIG_ZRAM_BACKEND_842)		+= backend_842.o
 zram-$(CONFIG_ZRAM_ANDROID_IOCTL)	+= zram_ioctl.o
 
 obj-$(CONFIG_ZRAM)	+=	zram.o
-
-# Qualcomm (from 6.12 soc-repo)
-ccflags-y += -I$(src)
