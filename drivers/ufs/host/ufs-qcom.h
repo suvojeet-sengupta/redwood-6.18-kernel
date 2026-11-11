@@ -15,6 +15,39 @@
 #include <linux/panic_notifier.h>
 #include <soc/qcom/ice.h>
 #include <ufs/ufshcd.h>
+
+/* 6.18 no longer names the UFS register ranges; ufs-qcom still dumps them by index */
+/* Qualcomm MCQ configuration, as in 6.18's ufs-qcom.h, for the MCQ resource code */
+#define UFS_QCOM_MCQCAP_QCFGPTR     224  /* 0xE0 in hex */
+#define UFS_QCOM_MCQ_CONFIG_OFFSET  (UFS_QCOM_MCQCAP_QCFGPTR * 0x200)  /* 0x1C000 */
+#define UFS_QCOM_MCQ_SQD_OFFSET     0x5000
+#define UFS_QCOM_MCQ_CQD_OFFSET     0x5080
+#define UFS_QCOM_MCQ_SQIS_OFFSET    0x5040
+#define UFS_QCOM_MCQ_CQIS_OFFSET    0x50C0
+#define UFS_QCOM_MCQ_STRIDE         0x100
+#define UFS_QCOM_SQD_ADDR_OFFSET    (UFS_QCOM_MCQ_CONFIG_OFFSET + UFS_QCOM_MCQ_SQD_OFFSET)
+#define UFS_QCOM_CQD_ADDR_OFFSET    (UFS_QCOM_MCQ_CONFIG_OFFSET + UFS_QCOM_MCQ_CQD_OFFSET)
+#define UFS_QCOM_SQIS_ADDR_OFFSET   (UFS_QCOM_MCQ_CONFIG_OFFSET + UFS_QCOM_MCQ_SQIS_OFFSET)
+#define UFS_QCOM_CQIS_ADDR_OFFSET   (UFS_QCOM_MCQ_CONFIG_OFFSET + UFS_QCOM_MCQ_CQIS_OFFSET)
+#ifndef REG_UFS_MCQ_STRIDE
+#define REG_UFS_MCQ_STRIDE          UFS_QCOM_MCQ_STRIDE
+#endif
+
+/* A 6.12 quirk the 6.18 core no longer has; the ufs-qcom device table still names it */
+#ifndef UFS_DEVICE_QUIRK_DELAY_AFTER_LPM
+#define UFS_DEVICE_QUIRK_DELAY_AFTER_LPM	(1 << 11)
+#endif
+
+enum ufshcd_res {
+	RES_UFS,
+	RES_MCQ,
+	RES_MCQ_SQD,
+	RES_MCQ_SQIS,
+	RES_MCQ_CQD,
+	RES_MCQ_CQIS,
+	RES_MCQ_VS,
+	RES_MAX,
+};
 #include <ufs/unipro.h>
 #include "drivers/ufs/host/ufshcd-pltfrm.h"
 
@@ -638,31 +671,6 @@ static inline bool is_shared_ice_supported(struct ufs_qcom_host *host)
 	return !!(host->caps & UFS_QCOM_CAP_SHARED_ICE);
 }
 
-/**
- * ufshcd_dme_rmw - get modify set a dme attribute
- * @hba - per adapter instance
- * @mask - mask to apply on read value
- * @val - actual value to write
- * @attr - dme attribute
- */
-static inline int ufshcd_dme_rmw(struct ufs_hba *hba, u32 mask,
-				 u32 val, u32 attr)
-{
-	u32 cfg = 0;
-	int err = 0;
-
-	err = ufshcd_dme_get(hba, UIC_ARG_MIB(attr), &cfg);
-	if (err)
-		goto out;
-
-	cfg &= ~mask;
-	cfg |= (val & mask);
-
-	err = ufshcd_dme_set(hba, UIC_ARG_MIB(attr), cfg);
-
-out:
-	return err;
-}
 
 /*
  *  IOCTL opcode for ufs queries has the following opcode after

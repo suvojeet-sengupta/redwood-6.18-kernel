@@ -211,3 +211,4 @@ clean-files := kheaders.md5 kheaders-srclist kheaders-objlist
 # Qualcomm (from 6.12 soc-repo)
 obj-y += sched/walt/
 obj-$(CONFIG_MSM_SYSSTATS) += msm_sysstats.o
+subdir-ccflags-y += -I$(srctree)

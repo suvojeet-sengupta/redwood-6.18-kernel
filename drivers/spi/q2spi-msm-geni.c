@@ -2601,7 +2601,7 @@ static int q2spi_release(struct inode *inode, struct file *filp)
 	Q2SPI_DEBUG(q2spi, "%s PID:%d allocs:%d\n",
 		    __func__, current->pid, atomic_read(&q2spi->alloc_count));
 	mutex_lock(&q2spi->port_lock);
-	del_timer_sync(&q2spi->slave_sleep_timer);
+	timer_delete_sync(&q2spi->slave_sleep_timer);
 	atomic_set(&q2spi->sma_wr_pending, 0);
 	atomic_set(&q2spi->sma_rd_pending, 0);
 
@@ -2865,7 +2865,7 @@ static int q2spi_gsi_submit(struct q2spi_packet *q2spi_pkt)
 	if (ret) {
 		Q2SPI_DEBUG(q2spi, "%s Err q2spi_setup_gsi_xfer failed: %d\n", __func__, ret);
 		atomic_set(&q2spi->sma_wr_pending, 0);
-		del_timer_sync(&q2spi->slave_sleep_timer);
+		timer_delete_sync(&q2spi->slave_sleep_timer);
 		goto unmap_buf;
 	}
 	Q2SPI_DBG_2(q2spi, "%s PID:%d waiting check_gsi_transfer_completion\n",
@@ -2875,7 +2875,7 @@ static int q2spi_gsi_submit(struct q2spi_packet *q2spi_pkt)
 		Q2SPI_DEBUG(q2spi, "%s PID:%d Err completion timeout: %d\n",
 			    __func__, current->pid, ret);
 		atomic_set(&q2spi->sma_wr_pending, 0);
-		del_timer_sync(&q2spi->slave_sleep_timer);
+		timer_delete_sync(&q2spi->slave_sleep_timer);
 		goto unmap_buf;
 	}
 
@@ -4301,7 +4301,7 @@ static int q2spi_sleep_config(struct q2spi_geni *q2spi, struct platform_device *
  */
 void q2spi_client_sleep_timeout_handler(struct timer_list *t)
 {
-	struct q2spi_geni *q2spi = from_timer(q2spi, t, slave_sleep_timer);
+	struct q2spi_geni *q2spi = timer_container_of(q2spi, t, slave_sleep_timer);
 
 	Q2SPI_DBG_1(q2spi, "%s: PID=%d\n", __func__, current->pid);
 	if (q2spi_sys_restart || q2spi->port_release) {

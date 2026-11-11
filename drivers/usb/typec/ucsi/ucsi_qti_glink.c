@@ -519,12 +519,27 @@ static int ucsi_qti_async_control(struct ucsi *ucsi, u64 command)
 }
 
 
-static int ucsi_qti_sync_control(struct ucsi *ucsi, u64 command)
+static int ucsi_qti_sync_control(struct ucsi *ucsi, u64 command, u32 *cci,
+				 void *data, size_t size)
 {
 	struct ucsi_dev *udev = ucsi_get_drvdata(ucsi);
+	int ret;
 
-	return ucsi_qti_glink_write(udev, UCSI_CONTROL, &command,
+	ret = ucsi_qti_glink_write(udev, UCSI_CONTROL, &command,
 				sizeof(command), true);
+	if (ret)
+		return ret;
+
+	if (cci) {
+		ret = ucsi->ops->read_cci(ucsi, cci);
+		if (ret)
+			return ret;
+	}
+
+	if (data && size)
+		ret = ucsi->ops->read_message_in(ucsi, data, size);
+
+	return ret;
 }
 
 static int ucsi_qti_read(struct ucsi_dev *udev, unsigned int offset,

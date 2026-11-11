@@ -163,8 +163,6 @@ static void md_dump_meminfo(struct seq_buf *m)
 #endif
 	show_val_kb(m, "PageTables:     ",
 		    global_node_page_state(NR_PAGETABLE));
-	show_val_kb(m, "Bounce:         ",
-		    global_zone_page_state(NR_BOUNCE));
 	show_val_kb(m, "WritebackTmp:   ",
 		    global_node_page_state(NR_WRITEBACK_TEMP));
 	seq_buf_printf(m, "VmallocTotal:   %8lu kB\n",
@@ -1191,7 +1189,7 @@ static void md_dma_buf_info(char *m, size_t dump_size)
 			"size", "flags", "mode", "count", "ino");
 	buf.offset = ret;
 
-	ret = get_dmabuf_debugfs_data(dump_bufinfo, (void *)&dma_buf_priv);
+	ret = 0; /* 6.18 has no dma-buf debugfs walker for vendor modules */
 	if (ret)
 		pr_err("Error occurred during dmabuf debugfs data collection!\n");
 
@@ -1524,4 +1522,4 @@ int md_minidump_memory_init(void)
 	return error;
 }
 
-MODULE_IMPORT_NS(DMA_BUF);
+MODULE_IMPORT_NS("DMA_BUF");

@@ -1042,7 +1042,7 @@ static int slate_load(struct rproc *rproc, const struct firmware *fw)
 	pr_debug("Loading from %pa tp %pa\n", &slate_data->region_start,
 			&slate_data->region_end);
 
-	ret = qcom_mdt_load_no_init(slate_data->dev, fw, rproc->firmware, 0,
+	ret = qcom_mdt_load_no_init(slate_data->dev, fw, rproc->firmware,
 		slate_data->region, slate_data->region_start,
 		slate_data->region_size, NULL);
 	if (ret) {

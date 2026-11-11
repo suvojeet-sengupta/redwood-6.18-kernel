@@ -2030,7 +2030,7 @@ static struct platform_driver pikachu_tlmm_driver = {
 		.of_match_table = pikachu_tlmm_of_match,
 	},
 	.probe = pikachu_tlmm_probe,
-	.remove_new = msm_pinctrl_remove,
+	.remove = msm_pinctrl_remove,
 };
 
 static int __init pikachu_tlmm_init(void)

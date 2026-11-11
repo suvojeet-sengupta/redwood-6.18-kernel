@@ -504,9 +504,8 @@ static int __init qcom_llcc_miss_init(void)
 	}
 
 	mutex_init(&llcc_miss->lock);
-	hrtimer_init(&llcc_miss->hrtimer, CLOCK_MONOTONIC,
-				HRTIMER_MODE_REL);
-	llcc_miss->hrtimer.function = hrtimer_handler;
+	hrtimer_setup(&llcc_miss->hrtimer, hrtimer_handler, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	
 	llcc_miss->wq = create_freezable_workqueue("llcc_miss_wq");
 	if (!llcc_miss->wq) {
 		pr_err("Couldn't create llcc_miss workqueue.\n");

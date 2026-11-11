@@ -731,7 +731,7 @@ struct platform_driver arm_vsmmu_driver = {
 		.suppress_bind_attrs	= true,
 	},
 	.probe	= arm_vsmmu_device_probe,
-	.remove_new = arm_vsmmu_device_remove,
+	.remove = arm_vsmmu_device_remove,
 };
 
 int arm_smmu_qcom_virtio_init(void)

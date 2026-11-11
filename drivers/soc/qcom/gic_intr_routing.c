@@ -618,7 +618,7 @@ static void affinity_initialize_workfn(struct work_struct *work)
 		gic_chip = READ_ONCE(gic_routing_data.gic_chip);
 	}
 
-	for (i = 1; i < nr_irqs; i++) {
+	for (i = 1; i < irq_get_nr_irqs(); i++) {
 		if (atomic_add_return(0,
 		    &gic_routing_data.abort_balancing))
 			return;

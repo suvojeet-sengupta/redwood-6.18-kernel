@@ -275,7 +275,7 @@ static int pdr_send_indack_msg(struct pdr_handle *pdr, struct pdr_service *pds,
 
 static void ind_notif_timeout_handler(struct timer_list *t)
 {
-	struct pdr_list_node *ind = from_timer(ind, t, timer);
+	struct pdr_list_node *ind = timer_container_of(ind, t, timer);
 	struct pdr_service *pds = ind->pds;
 
 	if (IS_ENABLED(CONFIG_QCOM_PANIC_ON_PDR_NOTIF_TIMEOUT) &&
@@ -304,7 +304,7 @@ static void pdr_indack_work(struct work_struct *work)
 		timeout = jiffies + msecs_to_jiffies(PDR_IND_NOTIF_TIMEOUT);
 		mod_timer(&ind->timer, timeout);
 		pdr->status(pds->state, pds->service_path, pdr->priv);
-		del_timer_sync(&ind->timer);
+		timer_delete_sync(&ind->timer);
 		mutex_unlock(&pdr->status_lock);
 
 		/* Ack the indication after clients release the PD resources */

@@ -38,7 +38,7 @@
 #include <asm/arch_timer.h>
 #include <linux/jiffies.h>
 #include <linux/suspend.h>
-#include "qcom_common.h"
+#include "drivers/remoteproc/qcom_common.h"
 #include <uapi/misc/adsp_sleepmon.h>
 #include <linux/remoteproc/qcom_rproc.h>
 
@@ -592,7 +592,7 @@ static int sleepmon_rpmsg_callback(struct rpmsg_device *dev, void *data,
 		g_adspsleepmon.audio_stats.num_sessions = 0;
 		g_adspsleepmon.audio_stats.num_lpi_sessions = 0;
 
-		del_timer(&adspsleep_timer);
+		timer_delete(&adspsleep_timer);
 		g_adspsleepmon.timer_pending = false;
 		g_adspsleepmon.accumulated_duration = 0;
 		g_adspsleepmon.accumulated_resumes = 0;
@@ -1421,7 +1421,7 @@ static int adspsleepmon_device_release(struct inode *inode, struct file *fp)
 				mod_timer(&adspsleep_timer, jiffies + delay * HZ);
 				g_adspsleepmon.timer_pending = true;
 			} else if (g_adspsleepmon.timer_pending) {
-				del_timer(&adspsleep_timer);
+				timer_delete(&adspsleep_timer);
 				g_adspsleepmon.timer_pending = false;
 				g_adspsleepmon.accumulated_duration = 0;
 				g_adspsleepmon.accumulated_resumes = 0;
@@ -1636,7 +1636,7 @@ static long adspsleepmon_device_ioctl(struct file *file,
 			mod_timer(&adspsleep_timer, jiffies + delay * HZ);
 			g_adspsleepmon.timer_pending = true;
 		} else if (g_adspsleepmon.timer_pending) {
-			del_timer(&adspsleep_timer);
+			timer_delete(&adspsleep_timer);
 			g_adspsleepmon.timer_pending = false;
 			g_adspsleepmon.accumulated_duration = 0;
 			g_adspsleepmon.accumulated_resumes = 0;

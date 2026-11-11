@@ -2545,7 +2545,7 @@ MODULE_DEVICE_TABLE(of, qnoc_of_match);
 
 static struct platform_driver qnoc_driver = {
 	.probe = qnoc_probe,
-	.remove_new = qcom_icc_rpmh_remove,
+	.remove = qcom_icc_rpmh_remove,
 	.driver = {
 		.name = "qnoc-yupik",
 		.of_match_table = qnoc_of_match,

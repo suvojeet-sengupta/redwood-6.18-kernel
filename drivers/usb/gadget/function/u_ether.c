@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * u_ether.c -- Ethernet-over-USB link layer utilities for Gadget stack
  *
  * Copyright (C) 2003-2005,2008 David Brownell
  * Copyright (C) 2003-2004 Robert Schwebel, Benedikt Spranger
  * Copyright (C) 2008 Nokia Corporation
- * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  */
 
 /* #define VERBOSE_DEBUG */
@@ -47,11 +46,9 @@
 
 #define UETH__VERSION	"29-May-2008"
 
-/*
- * Experiments show that both Linux and Windows hosts allow up to 16k
+/* Experiments show that both Linux and Windows hosts allow up to 16k
  * frame sizes. Set the max MTU size to 15k+52 to prevent allocating 32k
- * blocks and still have efficient handling.
- */
+ * blocks and still have efficient handling. */
 #define GETHER_MAX_MTU_SIZE 15412
 #define GETHER_MAX_ETH_FRAME_LEN (GETHER_MAX_MTU_SIZE + ETH_HLEN)
 
@@ -70,11 +67,11 @@ struct eth_dev {
 
 	struct sk_buff_head	rx_frames;
 
-	unsigned int		qmult;
+	unsigned		qmult;
 
-	unsigned int		header_len;
-	struct sk_buff		*(*wrap)(struct gether *port, struct sk_buff *skb);
-	int			(*unwrap)(struct gether *port,
+	unsigned		header_len;
+	struct sk_buff		*(*wrap)(struct gether *, struct sk_buff *skb);
+	int			(*unwrap)(struct gether *,
 						struct sk_buff *skb,
 						struct sk_buff_head *list);
 
@@ -97,7 +94,7 @@ struct eth_dev {
 #define DEFAULT_QLEN	2	/* double buffering by default */
 
 /* use deeper queues at high/super speed */
-static inline int qlen(struct usb_gadget *gadget, unsigned int  qmult)
+static inline int qlen(struct usb_gadget *gadget, unsigned qmult)
 {
 	if (gadget->speed == USB_SPEED_HIGH || gadget->speed >= USB_SPEED_SUPER)
 		return qmult * DEFAULT_QLEN;
@@ -115,8 +112,10 @@ static void eth_get_drvinfo(struct net_device *net, struct ethtool_drvinfo *p)
 
 	strscpy(p->driver, "g_ether", sizeof(p->driver));
 	strscpy(p->version, UETH__VERSION, sizeof(p->version));
-	strscpy(p->fw_version, dev->gadget->name, sizeof(p->fw_version));
-	strscpy(p->bus_info, dev_name(&dev->gadget->dev), sizeof(p->bus_info));
+	if (dev->gadget) {
+		strscpy(p->fw_version, dev->gadget->name, sizeof(p->fw_version));
+		strscpy(p->bus_info, dev_name(&dev->gadget->dev), sizeof(p->bus_info));
+	}
 }
 
 /* REVISIT can also support:
@@ -158,7 +157,8 @@ rx_submit(struct eth_dev *dev, struct usb_request *req, gfp_t gfp_flags)
 	else
 		out = NULL;
 
-	if (!out) {
+	if (!out)
+	{
 		spin_unlock_irqrestore(&dev->lock, flags);
 		return -ENOTCONN;
 	}
@@ -312,9 +312,9 @@ clean:
 		rx_submit(dev, req, GFP_ATOMIC);
 }
 
-static int prealloc(struct list_head *list, struct usb_ep *ep, unsigned int n)
+static int prealloc(struct list_head *list, struct usb_ep *ep, unsigned n)
 {
-	unsigned int i;
+	unsigned		i;
 	struct usb_request	*req;
 
 	if (!n)
@@ -351,7 +351,7 @@ extra:
 	return 0;
 }
 
-static int alloc_requests(struct eth_dev *dev, struct gether *link, unsigned int n)
+static int alloc_requests(struct eth_dev *dev, struct gether *link, unsigned n)
 {
 	int	status;
 
@@ -445,14 +445,11 @@ static int ether_wakeup_host(struct gether *port)
 	struct usb_function	*func = &port->func;
 	struct usb_gadget	*gadget = func->config->cdev->gadget;
 
-	if (func->func_suspended) {
-		ret = -EOPNOTSUPP;
-#ifdef CONFIG_USB_FUNC_WAKEUP_SUPPORTED
+	if (func->func_suspended)
 		ret = usb_func_wakeup(func);
-#endif
-	} else {
+	else
 		ret = usb_gadget_wakeup(gadget);
-	}
+
 	return ret;
 }
 
@@ -606,6 +603,7 @@ multiframe:
 
 static void eth_start(struct eth_dev *dev, gfp_t gfp_flags)
 {
+	DBG(dev, "%s\n", __func__);
 
 	/* fill the rx queue */
 	rx_fill(dev, gfp_flags);
@@ -620,6 +618,7 @@ static int eth_open(struct net_device *net)
 	struct eth_dev	*dev = netdev_priv(net);
 	struct gether	*link;
 
+	DBG(dev, "%s\n", __func__);
 	if (netif_carrier_ok(dev->net))
 		eth_start(dev, GFP_KERNEL);
 
@@ -637,6 +636,7 @@ static int eth_stop(struct net_device *net)
 	struct eth_dev	*dev = netdev_priv(net);
 	unsigned long	flags;
 
+	VDBG(dev, "%s\n", __func__);
 	netif_stop_queue(net);
 
 	DBG(dev, "stop stats: rx/tx %ld/%ld, errs %ld/%ld\n",
@@ -685,7 +685,7 @@ static int eth_stop(struct net_device *net)
 static int get_ether_addr(const char *str, u8 *dev_addr)
 {
 	if (str) {
-		unsigned int i;
+		unsigned	i;
 
 		for (i = 0; i < 6; i++) {
 			unsigned char num;
@@ -694,7 +694,7 @@ static int get_ether_addr(const char *str, u8 *dev_addr)
 				str++;
 			num = hex_to_bin(*str++) << 4;
 			num |= hex_to_bin(*str++);
-			dev_addr[i] = num;
+			dev_addr [i] = num;
 		}
 		if (is_valid_ether_addr(dev_addr))
 			return 0;
@@ -716,7 +716,7 @@ static const struct net_device_ops eth_netdev_ops = {
 	.ndo_open		= eth_open,
 	.ndo_stop		= eth_stop,
 	.ndo_start_xmit		= eth_start_xmit,
-	.ndo_set_mac_address	= eth_mac_addr,
+	.ndo_set_mac_address 	= eth_mac_addr,
 	.ndo_validate_addr	= eth_validate_addr,
 };
 
@@ -740,14 +740,14 @@ static const struct device_type gadget_type = {
  */
 struct eth_dev *gether_setup_name(struct usb_gadget *g,
 		const char *dev_addr, const char *host_addr,
-		u8 ethaddr[ETH_ALEN], unsigned int qmult, const char *netname)
+		u8 ethaddr[ETH_ALEN], unsigned qmult, const char *netname)
 {
 	struct eth_dev		*dev;
 	struct net_device	*net;
 	int			status;
 	u8			addr[ETH_ALEN];
 
-	net = alloc_etherdev(sizeof(*dev));
+	net = alloc_etherdev(sizeof *dev);
 	if (!net)
 		return ERR_PTR(-ENOMEM);
 
@@ -811,7 +811,7 @@ struct eth_dev *gether_setup_name(struct usb_gadget *g,
 
 	return dev;
 }
-//EXPORT_SYMBOL_GPL(gether_setup_name);
+EXPORT_SYMBOL_GPL(gether_setup_name);
 
 struct net_device *gether_setup_name_default(const char *netname)
 {
@@ -854,7 +854,7 @@ struct net_device *gether_setup_name_default(const char *netname)
 
 	return net;
 }
-//EXPORT_SYMBOL_GPL(gether_setup_name_default);
+EXPORT_SYMBOL_GPL(gether_setup_name_default);
 
 int gether_register_netdev(struct net_device *net)
 {
@@ -873,19 +873,20 @@ int gether_register_netdev(struct net_device *net)
 	if (status < 0) {
 		dev_dbg(&g->dev, "register_netdev failed, %d\n", status);
 		return status;
-	}
-	INFO(dev, "HOST MAC %pM\n", dev->host_mac);
-	INFO(dev, "MAC %pM\n", dev->dev_mac);
+	} else {
+		INFO(dev, "HOST MAC %pM\n", dev->host_mac);
+		INFO(dev, "MAC %pM\n", dev->dev_mac);
 
-	/* two kinds of host-initiated state changes:
-	 *  - iff DATA transfer is active, carrier is "on"
-	 *  - tx queueing enabled if open *and* carrier is "on"
-	 */
-	netif_carrier_off(net);
+		/* two kinds of host-initiated state changes:
+		 *  - iff DATA transfer is active, carrier is "on"
+		 *  - tx queueing enabled if open *and* carrier is "on"
+		 */
+		netif_carrier_off(net);
+	}
 
 	return status;
 }
-//EXPORT_SYMBOL_GPL(gether_register_netdev);
+EXPORT_SYMBOL_GPL(gether_register_netdev);
 
 void gether_set_gadget(struct net_device *net, struct usb_gadget *g)
 {
@@ -895,7 +896,29 @@ void gether_set_gadget(struct net_device *net, struct usb_gadget *g)
 	dev->gadget = g;
 	SET_NETDEV_DEV(net, &g->dev);
 }
-//EXPORT_SYMBOL_GPL(gether_set_gadget);
+EXPORT_SYMBOL_GPL(gether_set_gadget);
+
+int gether_attach_gadget(struct net_device *net, struct usb_gadget *g)
+{
+	int ret;
+
+	ret = device_move(&net->dev, &g->dev, DPM_ORDER_DEV_AFTER_PARENT);
+	if (ret)
+		return ret;
+
+	gether_set_gadget(net, g);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(gether_attach_gadget);
+
+void gether_detach_gadget(struct net_device *net)
+{
+	struct eth_dev *dev = netdev_priv(net);
+
+	device_move(&net->dev, NULL, DPM_ORDER_NONE);
+	dev->gadget = NULL;
+}
+EXPORT_SYMBOL_GPL(gether_detach_gadget);
 
 int gether_set_dev_addr(struct net_device *net, const char *dev_addr)
 {
@@ -909,7 +932,7 @@ int gether_set_dev_addr(struct net_device *net, const char *dev_addr)
 	net->addr_assign_type = NET_ADDR_SET;
 	return 0;
 }
-//EXPORT_SYMBOL_GPL(gether_set_dev_addr);
+EXPORT_SYMBOL_GPL(gether_set_dev_addr);
 
 int gether_get_dev_addr(struct net_device *net, char *dev_addr, int len)
 {
@@ -925,7 +948,7 @@ int gether_get_dev_addr(struct net_device *net, char *dev_addr, int len)
 
 	return ret;
 }
-//EXPORT_SYMBOL_GPL(gether_get_dev_addr);
+EXPORT_SYMBOL_GPL(gether_get_dev_addr);
 
 int gether_set_host_addr(struct net_device *net, const char *host_addr)
 {
@@ -938,7 +961,7 @@ int gether_set_host_addr(struct net_device *net, const char *host_addr)
 	memcpy(dev->host_mac, new_addr, ETH_ALEN);
 	return 0;
 }
-//EXPORT_SYMBOL_GPL(gether_set_host_addr);
+EXPORT_SYMBOL_GPL(gether_set_host_addr);
 
 int gether_get_host_addr(struct net_device *net, char *host_addr, int len)
 {
@@ -954,7 +977,7 @@ int gether_get_host_addr(struct net_device *net, char *host_addr, int len)
 
 	return ret;
 }
-//EXPORT_SYMBOL_GPL(gether_get_host_addr);
+EXPORT_SYMBOL_GPL(gether_get_host_addr);
 
 int gether_get_host_addr_cdc(struct net_device *net, char *host_addr, int len)
 {
@@ -970,7 +993,7 @@ int gether_get_host_addr_cdc(struct net_device *net, char *host_addr, int len)
 
 	return strlen(host_addr);
 }
-//EXPORT_SYMBOL_GPL(gether_get_host_addr_cdc);
+EXPORT_SYMBOL_GPL(gether_get_host_addr_cdc);
 
 void gether_get_host_addr_u8(struct net_device *net, u8 host_mac[ETH_ALEN])
 {
@@ -979,25 +1002,25 @@ void gether_get_host_addr_u8(struct net_device *net, u8 host_mac[ETH_ALEN])
 	dev = netdev_priv(net);
 	memcpy(host_mac, dev->host_mac, ETH_ALEN);
 }
-//EXPORT_SYMBOL_GPL(gether_get_host_addr_u8);
+EXPORT_SYMBOL_GPL(gether_get_host_addr_u8);
 
-void gether_set_qmult(struct net_device *net, unsigned int qmult)
+void gether_set_qmult(struct net_device *net, unsigned qmult)
 {
 	struct eth_dev *dev;
 
 	dev = netdev_priv(net);
 	dev->qmult = qmult;
 }
-//EXPORT_SYMBOL_GPL(gether_set_qmult);
+EXPORT_SYMBOL_GPL(gether_set_qmult);
 
-unsigned int gether_get_qmult(struct net_device *net)
+unsigned gether_get_qmult(struct net_device *net)
 {
 	struct eth_dev *dev;
 
 	dev = netdev_priv(net);
 	return dev->qmult;
 }
-//EXPORT_SYMBOL_GPL(gether_get_qmult);
+EXPORT_SYMBOL_GPL(gether_get_qmult);
 
 int gether_get_ifname(struct net_device *net, char *name, int len)
 {
@@ -1010,7 +1033,7 @@ int gether_get_ifname(struct net_device *net, char *name, int len)
 	rtnl_unlock();
 	return ret;
 }
-//EXPORT_SYMBOL_GPL(gether_get_ifname);
+EXPORT_SYMBOL_GPL(gether_get_ifname);
 
 int gether_set_ifname(struct net_device *net, const char *name, int len)
 {
@@ -1038,7 +1061,7 @@ int gether_set_ifname(struct net_device *net, const char *name, int len)
 
 	return 0;
 }
-//EXPORT_SYMBOL_GPL(gether_set_ifname);
+EXPORT_SYMBOL_GPL(gether_set_ifname);
 
 void gether_suspend(struct gether *link)
 {
@@ -1060,7 +1083,7 @@ void gether_suspend(struct gether *link)
 	link->is_suspend = true;
 	spin_unlock_irqrestore(&dev->lock, flags);
 }
-//EXPORT_SYMBOL_GPL(gether_suspend);
+EXPORT_SYMBOL_GPL(gether_suspend);
 
 void gether_resume(struct gether *link)
 {
@@ -1077,7 +1100,7 @@ void gether_resume(struct gether *link)
 	link->is_suspend = false;
 	spin_unlock_irqrestore(&dev->lock, flags);
 }
-//EXPORT_SYMBOL_GPL(gether_resume);
+EXPORT_SYMBOL_GPL(gether_resume);
 
 /*
  * gether_cleanup - remove Ethernet-over-USB device
@@ -1094,7 +1117,7 @@ void gether_cleanup(struct eth_dev *dev)
 	flush_work(&dev->work);
 	free_netdev(dev->net);
 }
-//EXPORT_SYMBOL_GPL(gether_cleanup);
+EXPORT_SYMBOL_GPL(gether_cleanup);
 
 /**
  * gether_connect - notify network layer that USB link is active
@@ -1176,7 +1199,7 @@ fail0:
 		return ERR_PTR(result);
 	return dev->net;
 }
-//EXPORT_SYMBOL_GPL(gether_connect);
+EXPORT_SYMBOL_GPL(gether_connect);
 
 /**
  * gether_disconnect - notify network layer that USB link is inactive
@@ -1198,6 +1221,13 @@ void gether_disconnect(struct gether *link)
 	WARN_ON(!dev);
 	if (!dev)
 		return;
+
+	DBG(dev, "%s\n", __func__);
+
+	spin_lock(&dev->lock);
+	dev->port_usb = NULL;
+	link->is_suspend = false;
+	spin_unlock(&dev->lock);
 
 	netif_stop_queue(dev->net);
 	netif_carrier_off(dev->net);
@@ -1236,13 +1266,8 @@ void gether_disconnect(struct gether *link)
 	dev->header_len = 0;
 	dev->unwrap = NULL;
 	dev->wrap = NULL;
-
-	spin_lock(&dev->lock);
-	dev->port_usb = NULL;
-	link->is_suspend = false;
-	spin_unlock(&dev->lock);
 }
-//EXPORT_SYMBOL_GPL(gether_disconnect);
+EXPORT_SYMBOL_GPL(gether_disconnect);
 
 MODULE_DESCRIPTION("Ethernet-over-USB link layer utilities for Gadget stack");
 MODULE_LICENSE("GPL");

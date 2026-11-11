@@ -178,3 +178,4 @@ static int __init init_heap_driver(void)
 module_init(init_heap_driver);
 
 MODULE_LICENSE("GPL");
+MODULE_IMPORT_NS("DMA_BUF_HEAP");

@@ -1003,7 +1003,7 @@ static int ccid_cdev_init(struct cdev *cdev, const struct file_operations *fops,
 	struct device *dev;
 	int ret, minor;
 
-	minor = ida_simple_get(&ccid_ida, 0, MAX_INSTANCES, GFP_KERNEL);
+	minor = ida_alloc_range(&ccid_ida, 0, (MAX_INSTANCES) - 1, GFP_KERNEL);
 	if (minor < 0) {
 		pr_err("%s: No more minor numbers left! rc:%d\n", __func__,
 				minor);
@@ -1028,7 +1028,7 @@ static int ccid_cdev_init(struct cdev *cdev, const struct file_operations *fops,
 err_create_dev:
 	cdev_del(cdev);
 err_cdev_add:
-	ida_simple_remove(&ccid_ida, minor);
+	ida_free(&ccid_ida, minor);
 	return ret;
 }
 
@@ -1038,7 +1038,7 @@ static void ccid_cdev_free(struct cdev *cdev)
 
 	device_destroy(ccid_class, cdev->dev);
 	cdev_del(cdev);
-	ida_simple_remove(&ccid_ida, minor);
+	ida_free(&ccid_ida, minor);
 }
 
 static void ccid_free_func(struct usb_function *f)

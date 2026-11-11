@@ -459,7 +459,6 @@ int qcom_secure_system_heap_restore(void)
 
 static const struct dma_heap_ops system_heap_ops = {
 	.allocate = system_heap_allocate,
-	.get_pool_size = get_pool_size_bytes,
 };
 
 void qcom_secure_system_heap_create(const char *name, const char *secure_system_alias, int vmid)

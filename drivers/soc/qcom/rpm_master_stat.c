@@ -464,7 +464,7 @@ static const struct of_device_id rpm_master_table[] = {
 
 static struct platform_driver msm_rpm_master_stats_driver = {
 	.probe	= msm_rpm_master_stats_probe,
-	.remove_new = msm_rpm_master_stats_remove,
+	.remove = msm_rpm_master_stats_remove,
 	.driver = {
 		.name = "msm_rpm_master_stats",
 		.of_match_table = rpm_master_table,

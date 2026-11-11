@@ -22,7 +22,7 @@
 #include <linux/firmware/qcom/qcom_scm.h>
 #include <soc/qcom/minidump.h>
 #include <soc/qcom/watchdog.h>
-#include <soc/qcom/qcom_sdei.h>
+#include <linux/soc/qcom/qcom_sdei.h>
 #include <linux/cpumask.h>
 #include <linux/cpu_pm.h>
 #include <uapi/linux/sched/types.h>
@@ -178,13 +178,13 @@ int qcom_wdt_pet_suspend(struct device *dev)
 		return 0;
 
 	if (wdog_data->user_pet_enabled)
-		del_timer_sync(&wdog_data->user_pet_timer);
+		timer_delete_sync(&wdog_data->user_pet_timer);
 
 	spin_lock(&wdog_data->freeze_lock);
 	wdog_data->freeze_in_progress = true;
 	spin_unlock(&wdog_data->freeze_lock);
 	wdog_data->ops->reset_wdt(wdog_data);
-	del_timer_sync(&wdog_data->pet_timer);
+	timer_delete_sync(&wdog_data->pet_timer);
 	if (wdog_data->wakeup_irq_enable) {
 		if (wdog_data->hibernate || (pm_suspend_target_state == PM_SUSPEND_MEM) ||
 				(pm_suspend_target_state == PM_SUSPEND_TO_IDLE)) {
@@ -331,9 +331,9 @@ static void qcom_wdt_disable(struct msm_watchdog_data *wdog_dd)
 						&wdog_dd->panic_blk);
 	qcom_wdt_unregister_die_notifier(wdog_dd);
 	unregister_restart_handler(&wdog_dd->restart_blk);
-	del_timer_sync(&wdog_dd->pet_timer);
+	timer_delete_sync(&wdog_dd->pet_timer);
 	if (wdog_dd->user_pet_enabled)
-		del_timer_sync(&wdog_dd->user_pet_timer);
+		timer_delete_sync(&wdog_dd->user_pet_timer);
 	wdog_dd->ops->disable_wdt(wdog_dd);
 	dev_err(wdog_dd->dev, "QCOM Apps Watchdog deactivated\n");
 }
@@ -450,7 +450,7 @@ static ssize_t qcom_wdt_user_pet_enabled_set(struct device *dev,
 	if (wdog_dd->user_pet_enabled)
 		mod_timer(&wdog_dd->user_pet_timer, jiffies + delay_time);
 	else if (already_enabled)
-		del_timer_sync(&wdog_dd->user_pet_timer);
+		timer_delete_sync(&wdog_dd->user_pet_timer);
 
 	__qcom_wdt_user_pet(wdog_dd);
 
@@ -540,7 +540,7 @@ static void qcom_wdt_ping_other_cpus(struct msm_watchdog_data *wdog_dd)
 static void qcom_wdt_pet_task_wakeup(struct timer_list *t)
 {
 	struct msm_watchdog_data *wdog_dd =
-		from_timer(wdog_dd, t, pet_timer);
+		timer_container_of(wdog_dd, t, pet_timer);
 	wdog_dd->timer_expired = true;
 	wdog_dd->timer_fired = sched_clock();
 	wake_up(&wdog_dd->pet_complete);
@@ -548,7 +548,7 @@ static void qcom_wdt_pet_task_wakeup(struct timer_list *t)
 static void qcom_wdt_user_pet_bite(struct timer_list *t)
 {
 	struct msm_watchdog_data *wdog_dd =
-		from_timer(wdog_dd, t, user_pet_timer);
+		timer_container_of(wdog_dd, t, user_pet_timer);
 	if (!wdog_dd->user_pet_complete) {
 		dev_info(wdog_dd->dev, "QCOM Apps Watchdog user pet timeout!\n");
 		qcom_wdt_trigger_bite();
@@ -653,9 +653,9 @@ void qcom_wdt_remove(struct platform_device *pdev)
 		free_percpu((void __percpu *)wdog_dd->wdog_cpu_dd);
 	irq_dispose_mapping(wdog_dd->bark_irq);
 	dev_info(wdog_dd->dev, "QCOM Apps Watchdog Exit - Deactivated\n");
-	del_timer_sync(&wdog_dd->pet_timer);
+	timer_delete_sync(&wdog_dd->pet_timer);
 	if (wdog_dd->user_pet_enabled)
-		del_timer_sync(&wdog_dd->user_pet_timer);
+		timer_delete_sync(&wdog_dd->user_pet_timer);
 	wdog_dd->timer_expired = true;
 	wdog_dd->user_pet_complete = true;
 	kthread_stop(wdog_dd->watchdog_task);
@@ -829,7 +829,7 @@ static int qcom_wdt_init(struct msm_watchdog_data *wdog_dd,
 			free_percpu((void __percpu *)wdog_dd->wdog_cpu_dd);
 		}
 
-		del_timer_sync(&wdog_dd->pet_timer);
+		timer_delete_sync(&wdog_dd->pet_timer);
 		dev_err(wdog_dd->dev, "Failed Initializing QCOM Apps Watchdog\n");
 		return ret;
 	}

@@ -96,3 +96,4 @@ ccflags-y += -I$(src)
 obj-$(CONFIG_DP83867_PHY) += phy/dp83867.o
 obj-$(CONFIG_FAILOVER) += failover.o
 failover-objs += ../../net/core/failover.o
+obj-y += mdio_fe/

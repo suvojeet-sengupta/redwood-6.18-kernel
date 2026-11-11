@@ -784,7 +784,7 @@ static struct platform_driver qmp_driver = {
 		.pm = &aoss_qmp_mbox_pm_ops,
 	},
 	.probe = qmp_probe,
-	.remove_new = qmp_remove,
+	.remove = qmp_remove,
 };
 module_platform_driver(qmp_driver);
 

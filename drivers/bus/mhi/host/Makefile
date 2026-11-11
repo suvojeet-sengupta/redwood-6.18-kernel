@@ -7,3 +7,4 @@ mhi_pci_generic-y += pci_generic.o
 
 # Qualcomm (from 6.12 soc-repo)
 ccflags-y += -I$(src)
+mhi-$(CONFIG_MHI_BUS_MISC) += misc.o

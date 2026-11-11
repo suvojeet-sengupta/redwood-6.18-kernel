@@ -1431,7 +1431,7 @@ module_exit(si_core_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("SI CORE driver");
-MODULE_IMPORT_NS(DMA_BUF);
+MODULE_IMPORT_NS("DMA_BUF");
 MODULE_SOFTDEP("pre: qcom-scm");
 #if IS_ENABLED(CONFIG_QCOM_SI_CORE_MEM_FFA)
 MODULE_SOFTDEP("pre: arm_ffa arm_ffa_transport");

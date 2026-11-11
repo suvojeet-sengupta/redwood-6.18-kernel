@@ -1431,11 +1431,11 @@ static int qcom_hwkm_program_key_v1(const struct ice_mmio_data *mmio_data,
 	cmd_unwrap.unwrap.kwk = TPKEY_SLOT_ICEMEM_SLAVE;
 	if ((key->size) == KEY_WRAPPED_SIZE) {
 		cmd_unwrap.unwrap.sz = key->size;
-		memcpy(cmd_unwrap.unwrap.wkb, key->raw,
+		memcpy(cmd_unwrap.unwrap.wkb, key->bytes,
 				cmd_unwrap.unwrap.sz);
 	} else {
 		cmd_unwrap.unwrap.sz = (key->size) - RAW_SECRET_SIZE;
-		memcpy(cmd_unwrap.unwrap.wkb, (key->raw) + RAW_SECRET_SIZE,
+		memcpy(cmd_unwrap.unwrap.wkb, (key->bytes) + RAW_SECRET_SIZE,
 				cmd_unwrap.unwrap.sz);
 	}
 

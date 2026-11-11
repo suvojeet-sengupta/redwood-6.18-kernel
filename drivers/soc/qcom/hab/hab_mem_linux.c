@@ -479,16 +479,15 @@ static int habmem_compress_pfns(
 
 			page = sg_page(s);
 			if (j == 0) {
-				metadata->pfns.first_pfn = page_to_pfn(nth_page(page,
-							page_offset));
+				metadata->pfns.first_pfn = page_to_pfn(((page) + (page_offset)));
 			} else {
 				metadata->pfns.region[j-1].space =
-					page_to_pfn(nth_page(page, 0)) -
+					page_to_pfn(((page) + (0))) -
 					page_to_pfn(pre_page) - 1;
 				pr_debug("j %d, space %d, ppfn %lu, pfn %lu\n",
 					j, metadata->pfns.region[j-1].space,
 					page_to_pfn(pre_page),
-					page_to_pfn(nth_page(page, 0)));
+					page_to_pfn(((page) + (0))));
 			}
 
 			metadata->pfns.region[j].size = spage_size - page_offset;
@@ -499,7 +498,7 @@ static int habmem_compress_pfns(
 			}
 
 			page_count -= metadata->pfns.region[j].size;
-			pre_page = nth_page(page, metadata->pfns.region[j].size - 1);
+			pre_page = ((page) + (metadata->pfns.region[j].size - 1));
 			page_offset = 0;
 			j++;
 		}
@@ -1322,4 +1321,4 @@ int habmm_imp_hyp_map_check(void *imp_ctx, struct export_desc *exp)
 	return found;
 }
 
-MODULE_IMPORT_NS(DMA_BUF);
+MODULE_IMPORT_NS("DMA_BUF");

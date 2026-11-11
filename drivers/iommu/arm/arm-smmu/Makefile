@@ -7,3 +7,4 @@ arm_smmu-$(CONFIG_ARM_SMMU_QCOM_DEBUG) += arm-smmu-qcom-debug.o
 
 # Qualcomm (from 6.12 soc-repo)
 ccflags-y += -I$(src)
+arm_smmu-$(CONFIG_ARM_SMMU_QCOM) += arm-smmu-qcom-pm.o

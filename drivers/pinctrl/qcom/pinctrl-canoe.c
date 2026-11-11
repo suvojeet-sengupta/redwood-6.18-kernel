@@ -2735,7 +2735,7 @@ static struct platform_driver canoe_tlmm_driver = {
 		.pm = &noirq_msm_pinctrl_dev_pm_ops,
 	},
 	.probe = canoe_tlmm_probe,
-	.remove_new = msm_pinctrl_remove,
+	.remove = msm_pinctrl_remove,
 };
 
 static int __init canoe_tlmm_init(void)

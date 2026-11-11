@@ -2409,7 +2409,7 @@ MODULE_DEVICE_TABLE(of, glink_slatecom_of_match);
 
 static struct platform_driver glink_slatecom_driver = {
 	.probe = glink_slatecom_probe,
-	.remove_new = glink_slatecom_remove,
+	.remove = glink_slatecom_remove,
 	.driver = {
 		.name = "qcom_glink_slatecom",
 		.of_match_table = glink_slatecom_of_match,

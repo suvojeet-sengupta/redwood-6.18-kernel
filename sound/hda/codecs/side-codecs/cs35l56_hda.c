@@ -1186,7 +1186,7 @@ int cs35l56_hda_test_hook_get_speaker_id(struct device *dev, int amp_index, int 
 {
 	return cs35l56_hda_get_speaker_id(dev, amp_index, num_amps);
 }
-EXPORT_SYMBOL_NS_GPL(cs35l56_hda_test_hook_get_speaker_id, SND_HDA_SCODEC_CS35L56);
+EXPORT_SYMBOL_NS_GPL(cs35l56_hda_test_hook_get_speaker_id, "SND_HDA_SCODEC_CS35L56");
 #endif
 
 MODULE_DESCRIPTION("CS35L56 HDA Driver");

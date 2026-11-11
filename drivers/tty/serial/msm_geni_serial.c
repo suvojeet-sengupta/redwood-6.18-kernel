@@ -4732,7 +4732,7 @@ static void msm_geni_serial_shutdown(struct uart_port *uport)
 
 	/* Stop the console before stopping the current tx */
 	if (uart_console(uport)) {
-		console_stop(uport->cons);
+		console_suspend(uport->cons);
 		disable_irq(uport->irq);
 	} else {
 		if (!usage_count || !pm_runtime_active(uport->dev)) {

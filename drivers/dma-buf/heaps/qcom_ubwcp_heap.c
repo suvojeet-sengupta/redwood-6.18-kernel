@@ -432,4 +432,4 @@ int msm_ubwcp_set_ops(init_buffer init_buf_fn_ptr,
 }
 EXPORT_SYMBOL(msm_ubwcp_set_ops);
 
-MODULE_IMPORT_NS(DMA_BUF);
+MODULE_IMPORT_NS("DMA_BUF");

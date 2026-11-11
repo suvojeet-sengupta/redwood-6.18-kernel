@@ -718,7 +718,7 @@ static int lpm_cluster_gov_probe(struct platform_device *pdev)
 	cluster_gov->restrict_idx = -1;
 	cluster_gov->timer_cpu = -1;
 	pm_runtime_enable(&pdev->dev);
-	hrtimer_init(&cluster_gov->histtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_setup(&cluster_gov->histtimer, clusttimer_fn, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	cluster_gov->genpd = pd_to_genpd(cluster_gov->dev->pm_domain);
 	cluster_gov->genpd_nb.notifier_call = cluster_power_cb;
 	cluster_gov->genpd_nb.priority = INT_MAX;

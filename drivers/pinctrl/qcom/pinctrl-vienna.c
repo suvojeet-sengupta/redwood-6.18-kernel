@@ -2565,7 +2565,7 @@ static struct platform_driver vienna_tlmm_driver = {
 		.of_match_table = vienna_tlmm_of_match,
 	},
 	.probe = vienna_tlmm_probe,
-	.remove_new = msm_pinctrl_remove,
+	.remove = msm_pinctrl_remove,
 };
 
 static int __init vienna_tlmm_init(void)

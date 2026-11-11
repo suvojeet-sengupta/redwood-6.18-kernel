@@ -386,7 +386,7 @@ static int qcom_ice_program_wrapped_key(struct qcom_ice *ice,
 	if (err)
 		return -ENOMEM;
 
-	memcpy(shm.vaddr, key->raw, key->size);
+	memcpy(shm.vaddr, key->bytes, key->size);
 	qtee_shmbridge_flush_shm_buf(&shm);
 
 	if (!ice->use_hwkm) {

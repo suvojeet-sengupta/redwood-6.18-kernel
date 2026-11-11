@@ -1624,7 +1624,7 @@ static int battery_chg_init_psy(struct battery_chg_dev *bcdev)
 	int rc;
 
 	psy_cfg.drv_data = bcdev;
-	psy_cfg.of_node = bcdev->dev->of_node;
+	psy_cfg.fwnode = dev_fwnode(bcdev->dev);
 	if (bcdev->micro_usb) {
 		usb_psy_desc[USB_1_PORT_ID].properties = uusb_props;
 		usb_psy_desc[USB_1_PORT_ID].num_properties = ARRAY_SIZE(uusb_props);

@@ -1286,9 +1286,9 @@ static int dwc3_core_send_gadget_ep_cmd(struct dwc3_ep *dep, unsigned int cmd,
 			dwc3_msm_write_reg(mdwc->base, DWC3_GUSB2PHYCFG(0), reg);
 	}
 
-	dwc3_msm_ep_writel(dep->regs, DWC3_DEPCMDPAR0, params->param0);
-	dwc3_msm_ep_writel(dep->regs, DWC3_DEPCMDPAR1, params->param1);
-	dwc3_msm_ep_writel(dep->regs, DWC3_DEPCMDPAR2, params->param2);
+	dwc3_writel(dep->dwc, DWC3_DEPCMDPAR0(dep->number), params->param0);
+	dwc3_writel(dep->dwc, DWC3_DEPCMDPAR1(dep->number), params->param1);
+	dwc3_writel(dep->dwc, DWC3_DEPCMDPAR2(dep->number), params->param2);
 
 	/*
 	 * Synopsys Databook 2.60a states in section 6.3.2.5.6 of that if we're
@@ -1311,9 +1311,9 @@ static int dwc3_core_send_gadget_ep_cmd(struct dwc3_ep *dep, unsigned int cmd,
 	else
 		cmd |= DWC3_DEPCMD_CMDACT;
 
-	dwc3_msm_ep_writel(dep->regs, DWC3_DEPCMD, cmd);
+	dwc3_writel(dep->dwc, DWC3_DEPCMD(dep->number), cmd);
 	do {
-		reg = dwc3_msm_ep_readl(dep->regs, DWC3_DEPCMD);
+		reg = dwc3_readl(dep->dwc, DWC3_DEPCMD(dep->number));
 		if (!(reg & DWC3_DEPCMD_CMDACT)) {
 			cmd_status = DWC3_DEPCMD_STATUS(reg);
 
@@ -1365,7 +1365,7 @@ static int dwc3_core_send_gadget_ep_cmd(struct dwc3_ep *dep, unsigned int cmd,
 		if (ret != -ETIMEDOUT) {
 			u32 res_id;
 
-			res_id = dwc3_msm_ep_readl(dep->regs, DWC3_DEPCMD);
+			res_id = dwc3_readl(dep->dwc, DWC3_DEPCMD(dep->number));
 			dep->resource_index = DWC3_DEPCMD_GET_RSC_IDX(res_id);
 		}
 	}
@@ -2098,7 +2098,7 @@ static void gsi_get_channel_info(struct usb_ep *ep,
 
 	/* Provide physical USB addresses for DEPCMD and GEVENTCNT registers */
 	ch_info->depcmd_low_addr = (u32)(mdwc->reg_phys +
-				DWC3_DEP_BASE(dep->number) + DWC3_DEPCMD);
+				DWC3_DEPCMD(dep->number));
 
 	ch_info->depcmd_hi_addr = 0;
 

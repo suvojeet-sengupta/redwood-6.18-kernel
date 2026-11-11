@@ -457,8 +457,7 @@ static int adsp_load(struct rproc *rproc, const struct firmware *fw)
 		if (ret)
 			goto release_dtb_firmware;
 
-		ret = qcom_mdt_load_no_init(adsp->dev, adsp->dtb_firmware, adsp->dtb_firmware_name,
-					    adsp->dtb_pas_id, adsp->dtb_mem_region,
+		ret = qcom_mdt_load_no_init(adsp->dev, adsp->dtb_firmware, adsp->dtb_firmware_name, adsp->dtb_mem_region,
 					    adsp->dtb_mem_phys, adsp->dtb_mem_size,
 					    &adsp->dtb_mem_reloc);
 		if (ret)
@@ -487,7 +486,6 @@ static int adsp_load(struct rproc *rproc, const struct firmware *fw)
 				ret = qcom_mdt_load_no_init(adsp->dev,
 							    adsp->q6_subdev[i].dtb_firmware,
 							    adsp->q6_subdev[i].dtb_firmware_name,
-							    adsp->q6_subdev[i].dtb_pas_id,
 							    adsp->q6_subdev[i].dtb_mem_region,
 							    adsp->q6_subdev[i].dtb_mem_phys,
 							    adsp->q6_subdev[i].dtb_mem_size,
@@ -513,7 +511,6 @@ static int adsp_load(struct rproc *rproc, const struct firmware *fw)
 			ret = qcom_mdt_load_no_init(adsp->dev,
 						    adsp->q6_subdev[i].firmware,
 						    adsp->q6_subdev[i].firmware_name,
-						    adsp->q6_subdev[i].pas_id,
 						    adsp->q6_subdev[i].mem_region,
 						    adsp->q6_subdev[i].mem_phys,
 						    adsp->q6_subdev[i].mem_size,
@@ -882,7 +879,7 @@ static int adsp_start(struct rproc *rproc)
 	if (ret)
 		goto disable_regulator;
 
-	ret = qcom_mdt_load_no_init(adsp->dev, adsp->firmware, rproc->firmware, adsp->pas_id,
+	ret = qcom_mdt_load_no_init(adsp->dev, adsp->firmware, rproc->firmware,
 				    adsp->mem_region, adsp->mem_phys, adsp->mem_size,
 				    &adsp->mem_reloc);
 	if (ret)
@@ -1518,7 +1515,7 @@ static int adsp_attach(struct rproc *rproc)
 		read_early_boot_register(&(adsp->boot_timer));
 
 		wait_for_completion(&adsp->q6v5.subsys_booted);
-		del_timer(&adsp->boot_timer);
+		timer_delete(&adsp->boot_timer);
 
 		ret = ping_subsystem(&adsp->q6v5);
 		if (ret) {
@@ -3910,7 +3907,7 @@ MODULE_DEVICE_TABLE(of, adsp_of_match);
 
 static struct platform_driver adsp_driver = {
 	.probe = adsp_probe,
-	.remove_new = adsp_remove,
+	.remove = adsp_remove,
 	.driver = {
 		.name = "qcom_q6v5_pas",
 		.of_match_table = adsp_of_match,

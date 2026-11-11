@@ -2479,8 +2479,8 @@ static int llcc_perfmon_probe(struct platform_device *pdev)
 	if (llcc_priv->version >= LLCC_VERSION_5)
 		llcc_register_event_port(llcc_priv, &lcp_port_ops, EVENT_PORT_LCP);
 
-	hrtimer_init(&llcc_priv->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	llcc_priv->hrtimer.function = llcc_perfmon_timer_handler;
+	hrtimer_setup(&llcc_priv->hrtimer, llcc_perfmon_timer_handler, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	
 	llcc_priv->expires = 0;
 	llcc_priv->clock_enabled = false;
 	offset = LLCC_COMMON_HW_INFO(llcc_priv->version);

@@ -696,5 +696,5 @@ static void __exit sysstats_exit(void)
 
 module_init(sysstats_init);
 module_exit(sysstats_exit);
-MODULE_IMPORT_NS(MINIDUMP);
+MODULE_IMPORT_NS("MINIDUMP");
 MODULE_LICENSE("GPL");

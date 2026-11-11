@@ -20,7 +20,7 @@ struct qfprom_sys {
 };
 
 static ssize_t qfprom_sys_cell_read(struct file *filp, struct kobject *kobj,
-				struct bin_attribute *attr,
+				const struct bin_attribute *attr,
 				char *buf, loff_t pos, size_t count)
 {
 	struct nvmem_cell *cell;

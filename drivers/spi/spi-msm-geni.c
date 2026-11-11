@@ -766,7 +766,7 @@ static int spi_geni_get_chip_select_num(struct spi_device *spi_slv, u8 *cs_num)
 	int j;
 
 	for (j = 0; j < SPI_NUM_CHIPSELECT; j++) {
-		if (spi_slv->chip_select[j] != 0xFF && spi_slv->chip_select[j] < SPI_CS_CNT_MAX) {
+		if (spi_slv->chip_select[j] != 0xFF && spi_slv->chip_select[j] < SPI_DEVICE_CS_CNT_MAX) {
 		/* Geni SE doesn't support mutliple CS by same client, hence use only one CS */
 			*cs_num = spi_slv->chip_select[j];
 			return 0;
@@ -2824,7 +2824,7 @@ static void spi_geni_set_cs(struct spi_device *spi_slv, bool cs_active)
 	u8 idx;
 
 	if (spi_is_csgpiod(spi_slv)) {
-		for (idx = 0; idx < SPI_CS_CNT_MAX; idx++) {
+		for (idx = 0; idx < SPI_DEVICE_CS_CNT_MAX; idx++) {
 			if (spi_slv->cs_index_mask & BIT(idx)) {
 				struct gpio_desc *desc = spi_get_csgpiod(spi_slv, idx);
 

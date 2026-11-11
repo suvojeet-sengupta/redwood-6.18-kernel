@@ -197,3 +197,7 @@ obj-$(CONFIG_DPLL)		+= dpll/
 
 obj-$(CONFIG_DIBS)		+= dibs/
 obj-$(CONFIG_S390)		+= s390/
+
+# Qualcomm drivers include headers as "drivers/..." and "kernel/..."
+subdir-ccflags-y += -I$(srctree)
+obj-y += eom/

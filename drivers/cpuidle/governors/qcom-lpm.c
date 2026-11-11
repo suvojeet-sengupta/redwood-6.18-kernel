@@ -912,8 +912,8 @@ static int lpm_enable_device(struct cpuidle_driver *drv,
 	int ret;
 
 	spin_lock_init(&cpu_gov->lock);
-	hrtimer_init(cpu_histtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	hrtimer_init(cpu_biastimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_setup(cpu_histtimer, histtimer_fn, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hrtimer_setup(cpu_biastimer, biastimer_fn, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	if (!traces_registered) {
 		ret = register_trace_ipi_raise(ipi_raise, NULL);
 		if (ret)

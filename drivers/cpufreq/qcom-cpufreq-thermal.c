@@ -156,7 +156,7 @@ MODULE_DEVICE_TABLE(of, qcom_cpufreq_thermal_match);
 
 static struct platform_driver qcom_cpufreq_thermal_driver = {
 	.probe = qcom_cpufreq_thermal_driver_probe,
-	.remove_new = qcom_cpufreq_thermal_driver_remove,
+	.remove = qcom_cpufreq_thermal_driver_remove,
 	.driver = {
 		.name = "qcom-cpufreq-thermal",
 		.of_match_table = qcom_cpufreq_thermal_match,

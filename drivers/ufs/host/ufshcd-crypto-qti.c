@@ -56,11 +56,11 @@ static int ufshcd_qti_crypto_keyslot_program(struct blk_crypto_profile *profile,
 	if (key->crypto_cfg.key_type != BLK_CRYPTO_KEY_TYPE_HW_WRAPPED) {
 		if (ccap_array[cap_idx].algorithm_id == UFS_CRYPTO_ALG_AES_XTS) {
 			/* In XTS mode, the blk_crypto_key's size is already doubled */
-			memcpy(cfg.crypto_key, key->raw, key->size / 2);
+			memcpy(cfg.crypto_key, key->bytes, key->size / 2);
 			memcpy(cfg.crypto_key + UFS_CRYPTO_KEY_MAX_SIZE / 2,
-			       key->raw + key->size / 2, key->size / 2);
+			       key->bytes + key->size / 2, key->size / 2);
 		} else {
-			memcpy(cfg.crypto_key, key->raw, key->size);
+			memcpy(cfg.crypto_key, key->bytes, key->size);
 		}
 	}
 

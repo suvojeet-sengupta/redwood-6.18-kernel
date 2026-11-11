@@ -517,9 +517,8 @@ static int __init qcom_llcc_occ_init(void)
 	}
 
 	mutex_init(&llcc_occ->lock);
-	hrtimer_init(&llcc_occ->hrtimer, CLOCK_MONOTONIC,
-				HRTIMER_MODE_REL);
-	llcc_occ->hrtimer.function = hrtimer_handler;
+	hrtimer_setup(&llcc_occ->hrtimer, hrtimer_handler, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	
 	llcc_occ->wq = create_freezable_workqueue("llcc_occ_wq");
 	if (!llcc_occ->wq) {
 		pr_err("Couldn't create llcc_occ workqueue.\n");

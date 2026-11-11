@@ -366,7 +366,7 @@ static struct platform_driver smmuv2_nesting_driver = {
 		.name = "smmuv2-nesting",
 		.of_match_table = smmuv2_nested_of_match,
 	},
-	.remove_new = smmuv2_nesting_remove,
+	.remove = smmuv2_nesting_remove,
 };
 MODULE_LICENSE("GPL");
 

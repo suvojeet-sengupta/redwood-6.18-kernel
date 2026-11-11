@@ -9,6 +9,7 @@
 #if !defined(_TRACE_UFS_QCOM_H) || defined(TRACE_HEADER_MULTI_READ)
 #define _TRACE_UFS_QCOM_H
 
+#include "drivers/ufs/core/ufs_trace_types.h"
 #include <linux/tracepoint.h>
 
 #define str_opcode(opcode)						\

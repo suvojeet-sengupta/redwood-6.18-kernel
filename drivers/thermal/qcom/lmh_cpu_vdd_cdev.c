@@ -107,7 +107,7 @@ static int lmh_cpu_vdd_probe(struct platform_device *pdev)
 	}
 
 	mutex_lock(&lmh_cpu_vdd_lock);
-	ret = ida_simple_get(&lmh_cpu_vdd_ida, 0, 0, GFP_KERNEL);
+	ret = ida_alloc_min(&lmh_cpu_vdd_ida, 0, GFP_KERNEL);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to create ida\n");
 		goto unlock_exit;
@@ -138,7 +138,7 @@ static int lmh_cpu_vdd_probe(struct platform_device *pdev)
 	return ret;
 
 remove_ida:
-	ida_simple_remove(&lmh_cpu_vdd_ida, lmh_cpu_vdd_cdev->id);
+	ida_free(&lmh_cpu_vdd_ida, lmh_cpu_vdd_cdev->id);
 
 unlock_exit:
 	mutex_unlock(&lmh_cpu_vdd_lock);
@@ -158,7 +158,7 @@ static void lmh_cpu_vdd_remove(struct platform_device *pdev)
 				lmh_cpu_vdd->cdev);
 			lmh_cpu_vdd->cdev = NULL;
 		}
-		ida_simple_remove(&lmh_cpu_vdd_ida, lmh_cpu_vdd->id);
+		ida_free(&lmh_cpu_vdd_ida, lmh_cpu_vdd->id);
 		list_del(&lmh_cpu_vdd->node);
 	}
 	mutex_unlock(&lmh_cpu_vdd_lock);

@@ -660,7 +660,7 @@ static int get_qbg_context_write(void *data, u64 val)
 }
 
 static ssize_t qbg_blob_write(struct file *filp, struct kobject *kobj,
-				    struct bin_attribute *attr, char *buf,
+				    const struct bin_attribute *attr, char *buf,
 				    loff_t pos, size_t count)
 {
 	int rc;
@@ -675,7 +675,7 @@ static ssize_t qbg_blob_write(struct file *filp, struct kobject *kobj,
 }
 
 static ssize_t qbg_blob_read(struct file *filp, struct kobject *kobj,
-				      struct bin_attribute *attr, char *buf,
+				      const struct bin_attribute *attr, char *buf,
 				      loff_t pos, size_t count)
 {
 	struct device *dev = kobj_to_dev(kobj);
@@ -722,7 +722,7 @@ static struct attribute *battery_dbg_attrs[] = {
 	NULL,
 };
 
-static struct bin_attribute *battery_dbg_bin_attrs[] = {
+static const struct bin_attribute *const battery_dbg_bin_attrs[] = {
 	&qbg_blob,
 	NULL,
 };

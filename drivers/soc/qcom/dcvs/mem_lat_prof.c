@@ -567,9 +567,8 @@ static int __init qcom_bus_lat_init(void)
 	}
 
 	mutex_init(&bus_lat->lock);
-	hrtimer_init(&bus_lat->hrtimer, CLOCK_MONOTONIC,
-				HRTIMER_MODE_REL);
-	bus_lat->hrtimer.function = hrtimer_handler;
+	hrtimer_setup(&bus_lat->hrtimer, hrtimer_handler, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	
 	bus_lat->wq = create_freezable_workqueue("bus_lat_wq");
 	if (!bus_lat->wq) {
 		pr_err("Couldn't create bus_lat workqueue.\n");

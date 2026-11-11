@@ -9,3 +9,7 @@
 
 #define CREATE_TRACE_POINTS
 #include "trace.h"
+
+/* dwc3-msm reaches the core registers through the traced io.h helpers */
+EXPORT_TRACEPOINT_SYMBOL_GPL(dwc3_readl);
+EXPORT_TRACEPOINT_SYMBOL_GPL(dwc3_writel);

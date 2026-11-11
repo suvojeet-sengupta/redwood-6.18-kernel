@@ -607,7 +607,6 @@ static long get_pool_size_bytes(struct dma_heap *heap)
 
 static const struct dma_heap_ops system_heap_ops = {
 	.allocate = system_heap_allocate,
-	.get_pool_size = get_pool_size_bytes,
 };
 
 void qcom_system_heap_create(const char *name, const char *system_alias, bool uncached)

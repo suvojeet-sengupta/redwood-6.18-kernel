@@ -621,7 +621,7 @@ static const struct qmi_ops ssctl_ops = {
 
 static void sysmon_notif_timeout_handler(struct timer_list *t)
 {
-	struct notif_timeout_data *td = from_timer(td, t, timer);
+	struct notif_timeout_data *td = timer_container_of(td, t, timer);
 	struct qcom_sysmon *sysmon = container_of(td, struct qcom_sysmon, timeout_data);
 
 	if (IS_ENABLED(CONFIG_QCOM_PANIC_ON_NOTIF_TIMEOUT) &&
@@ -638,7 +638,7 @@ static void sysmon_notif_timeout_handler(struct timer_list *t)
 
 static void sysmon_shutdown_notif_timeout_handler(struct timer_list *t)
 {
-	struct notif_timeout_data *td = from_timer(td, t, timer);
+	struct notif_timeout_data *td = timer_container_of(td, t, timer);
 	struct qcom_sysmon *sysmon = container_of(td, struct qcom_sysmon, timeout_data);
 
 	WARN(1, shutdown_timeout_msg, sysmon->name);
@@ -668,7 +668,7 @@ static inline void send_event(struct qcom_sysmon *sysmon, struct qcom_sysmon *so
 	} else if (sysmon->ept)
 		sysmon_send_event(sysmon, source);
 
-	del_timer_sync(&source->timeout_data.timer);
+	timer_delete_sync(&source->timeout_data.timer);
 }
 
 static int sysmon_prepare(struct rproc_subdev *subdev)
@@ -760,7 +760,7 @@ static void sysmon_stop(struct rproc_subdev *subdev, bool crashed)
 	else if (sysmon->ept)
 		sysmon->shutdown_acked = sysmon_request_shutdown(sysmon);
 
-	del_timer_sync(&sysmon->timeout_data.timer);
+	timer_delete_sync(&sysmon->timeout_data.timer);
 }
 
 static void sysmon_unprepare(struct rproc_subdev *subdev)

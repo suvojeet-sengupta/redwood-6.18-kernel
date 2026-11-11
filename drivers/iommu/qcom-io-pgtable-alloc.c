@@ -12,6 +12,20 @@
 #include <soc/qcom/secure_buffer.h>
 #include "drivers/iommu/iommu-pages.h"
 
+/* 6.18 dropped the order-based iommu-pages helpers these tables were built on */
+static inline struct page *__iommu_alloc_pages(gfp_t gfp, int order)
+{
+	return alloc_pages(gfp | __GFP_ZERO, order);
+}
+
+static inline void __iommu_free_pages(struct page *page, int order)
+{
+	if (page)
+		__free_pages(page, order);
+}
+
+
+
 struct io_pgtable_pool {
 	u32 vmid;
 	struct kref ref;

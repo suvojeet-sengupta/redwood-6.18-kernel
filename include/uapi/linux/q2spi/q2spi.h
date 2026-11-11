@@ -93,7 +93,7 @@ struct q2spi_request {
 	__u8 end_point;
 	__u8 proto_ind;
 	__u32 data_len;
-	enum priority_type priority;//TODO to use in driver next phase
+	enum priority_type priority; /* TODO: use in the driver next phase */
 	__u8 flow_id;
 	_Bool sync;
 	__u32 reserved[20];

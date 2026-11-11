@@ -232,7 +232,7 @@ struct aqr107_priv {
 	struct aqr_global_syscfg global_cfg[AQR_NUM_GLOBAL_CFG];
 };
 
-#if IS_REACHABLE(CONFIG_HWMON) && IS_BUILTIN(CONFIG_AQUANTIA_PHY)
+#if IS_REACHABLE(CONFIG_HWMON)
 int aqr_hwmon_probe(struct phy_device *phydev);
 #else
 static inline int aqr_hwmon_probe(struct phy_device *phydev) { return 0; }

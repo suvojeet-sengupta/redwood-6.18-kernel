@@ -276,3 +276,6 @@ obj-$(CONFIG_VIRTIO_CLK) += virtio_clk.o
 obj-$(CONFIG_VIRTIO_CLK) += virtio_clk_direwolf.o
 obj-$(CONFIG_VIRTIO_CLK) += virtio_clk_lemans.o
 obj-$(CONFIG_VIRTIO_CLK) += virtio_clk_monaco.o
+clk-qcom-objs += clk-debug.o clk-opp.o clk-pm.o vdd-class.o
+clk-qcom-$(CONFIG_QCOM_GDSC) += gdsc-debug.o
+obj-$(CONFIG_COMMON_CLK_QCOM) += clk-dummy.o

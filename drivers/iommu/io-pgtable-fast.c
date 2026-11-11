@@ -21,6 +21,18 @@
 #include <linux/qcom-io-pgtable.h>
 #include "drivers/iommu/iommu-pages.h"
 
+/* 6.18 dropped the order-based iommu-pages helpers these tables were built on */
+static inline struct page *__iommu_alloc_pages(gfp_t gfp, int order)
+{
+	return alloc_pages(gfp | __GFP_ZERO, order);
+}
+
+static inline void __iommu_free_pages(struct page *page, int order)
+{
+	if (page)
+		__free_pages(page, order);
+}
+
 #define AV8L_FAST_MAX_ADDR_BITS		48
 
 /* Page table bits */
@@ -176,6 +188,8 @@ static void av8l_clean_range(struct io_pgtable_cfg *cfg, av8l_fast_iopte *start,
 #ifdef CONFIG_IOMMU_IO_PGTABLE_FAST_PROVE_TLB
 
 #include <linux/notifier.h>
+
+
 
 static ATOMIC_NOTIFIER_HEAD(av8l_notifier_list);
 
@@ -692,6 +706,7 @@ struct io_pgtable_init_fns io_pgtable_av8l_fast_init_fns = {
 #ifdef CONFIG_IOMMU_IO_PGTABLE_FAST_SELFTEST
 
 #include <linux/dma-map-ops.h>
+
 
 static struct io_pgtable_cfg *cfg_cookie;
 

@@ -6910,8 +6910,13 @@ static int msm_pcie_enable_link(struct msm_pcie_dev_t *dev)
 	cfg0_ecam_base = dbi->start + SZ_1M;
 	cfg0_ecam_limit = cfg0_ecam_base + SZ_1M - 1;
 
-	if (!of_pci_parse_bus_range(dev->pdev->dev.of_node, &res))
-		num_buses = res.end - res.start + 1;
+	{
+		u32 bus_range[2];
+
+		if (!of_property_read_u32_array(dev->pdev->dev.of_node, "bus-range",
+						bus_range, 2))
+			num_buses = bus_range[1] - bus_range[0] + 1;
+	}
 
 	PCIE_DBG(dev, "RC%d: configure ECAM for bus range:%d\n",
 			dev->rc_idx, num_buses);

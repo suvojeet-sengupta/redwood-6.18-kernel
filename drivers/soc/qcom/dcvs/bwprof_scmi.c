@@ -968,10 +968,9 @@ static int bwprof_dev_probe(struct platform_device *pdev)
 		}
 
 		buffer_fill_status = (struct buffer_fill_state *)buffer_fill_status_src;
-		hrtimer_init(&bwprof_data->bwprof_hrtimer, CLOCK_MONOTONIC,
-				HRTIMER_MODE_REL);
+		hrtimer_setup(&bwprof_data->bwprof_hrtimer, bwprof_hrtimer_handler, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 
-		bwprof_data->bwprof_hrtimer.function = bwprof_hrtimer_handler;
+		
 	}
 
 	bwprof_data->inited = true;

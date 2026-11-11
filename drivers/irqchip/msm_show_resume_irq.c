@@ -60,7 +60,7 @@ struct gic_chip_data_ds {
 
 static struct gic_chip_data_ds gic_data_ds __read_mostly;
 
-static void gic_suspend_ds(void *data, struct gic_chip_data *gic_data, int *ret)
+static void gic_suspend_ds(void *data, struct gic_chip_data *gic_data)
 {
 	int i;
 	void __iomem *rdist_base = gic_data_rdist_sgi_base();
@@ -82,7 +82,6 @@ static void gic_suspend_ds(void *data, struct gic_chip_data *gic_data, int *ret)
 
 	for (i = 2; i < gic_line_nr / 16; i++)
 		gic_data_ds.irq_edg_lvl[i] = readl_relaxed(base + GICD_ICFGR + i * 4);
-	*ret = 0;
 }
 
 static void gic_resume_ds(struct gic_chip_data *gic_data)
