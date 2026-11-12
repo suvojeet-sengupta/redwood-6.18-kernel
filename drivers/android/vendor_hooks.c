@@ -28,6 +28,7 @@
 #include <trace/hooks/dmabuf.h>
 #include <trace/hooks/dtask.h>
 #include <trace/hooks/dwc3.h>
+#include <trace/hooks/sound.h>
 #include <trace/hooks/epoch.h>
 #include <trace/hooks/fault.h>
 #include <trace/hooks/fpsimd.h>
@@ -783,6 +784,7 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_workingset_active);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_wp_page_reuse);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_wq_lockup_pool);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_xhci_resume);
+EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_snd_pcm_check_no_buffer);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_xhci_suspend);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_zs_shrinker_adjust);
 EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_zs_shrinker_bypass);
