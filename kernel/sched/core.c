@@ -1611,7 +1611,13 @@ static unsigned int __maybe_unused sysctl_sched_uclamp_util_max = SCHED_CAPACITY
  * This knob will not override the system default sched_util_clamp_min defined
  * above.
  */
-unsigned int sysctl_sched_uclamp_util_min_rt_default = SCHED_CAPACITY_SCALE;
+/*
+ * redwood: RT tasks default to a 25% floor instead of the full capacity.
+ * With the full floor every RT task (display commit, GPU dispatcher, audio)
+ * pinned its CPU at the top frequency and, through capacity-aware RT
+ * placement, landed on the prime core, which then never left 2.4 GHz.
+ */
+unsigned int sysctl_sched_uclamp_util_min_rt_default = SCHED_CAPACITY_SCALE / 4;
 
 /* All clamps are required to be less or equal than these values */
 static struct uclamp_se uclamp_default[UCLAMP_CNT];
