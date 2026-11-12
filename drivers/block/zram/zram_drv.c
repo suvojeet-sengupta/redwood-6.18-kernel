@@ -3016,6 +3016,50 @@ out:
 	atomic_set(&zram->pp_in_progress, 0);
 	return ret;
 }
+
+/*
+ * redwood: every device gets zstd as its secondary algorithm, and pages
+ * nobody has touched for recomp_idle_sec are recompressed with it every
+ * recomp_interval_sec, so the same zram holds more. 0 in either stops it.
+ */
+static const char default_recompressor[] = "zstd";
+static unsigned int recomp_interval_sec = 1800;
+module_param(recomp_interval_sec, uint, 0644);
+MODULE_PARM_DESC(recomp_interval_sec, "Seconds between idle page recompressions, 0 turns them off");
+static unsigned int recomp_idle_sec = 3600;
+module_param(recomp_idle_sec, uint, 0644);
+MODULE_PARM_DESC(recomp_idle_sec, "Recompress pages not accessed for this many seconds");
+
+static void zram_set_default_recompressor(struct zram *zram)
+{
+	char *alg = kstrdup(default_recompressor, GFP_KERNEL);
+
+	if (alg)
+		comp_algorithm_set(zram, ZRAM_SECONDARY_COMP, alg);
+}
+
+static void zram_recomp_work_fn(struct work_struct *work)
+{
+	struct zram *zram = container_of(to_delayed_work(work), struct zram,
+					 recomp_work);
+	struct device *dev = disk_to_dev(zram->disk);
+	char buf[32];
+	unsigned int interval = READ_ONCE(recomp_interval_sec);
+	unsigned int idle = READ_ONCE(recomp_idle_sec);
+
+	if (!interval)
+		return;
+
+	if (idle && zram->num_active_comps > 1) {
+		snprintf(buf, sizeof(buf), "%u", idle);
+		idle_store(dev, NULL, buf, strlen(buf));
+		strscpy(buf, "type=idle", sizeof(buf));
+		recompress_store(dev, NULL, buf, strlen(buf));
+	}
+
+	queue_delayed_work(system_power_efficient_wq, &zram->recomp_work,
+			   (unsigned long)interval * HZ);
+}
 #endif
 
 static void zram_bio_discard(struct zram *zram, struct bio *bio)
@@ -3210,6 +3254,9 @@ static void zram_reset_device(struct zram *zram)
 	reset_bdev(zram);
 
 	comp_algorithm_set(zram, ZRAM_PRIMARY_COMP, default_compressor);
+#ifdef CONFIG_ZRAM_MULTI_COMP
+	zram_set_default_recompressor(zram);
+#endif
 }
 
 static ssize_t disksize_store(struct device *dev, struct device_attribute *attr,
@@ -3448,6 +3495,13 @@ static int zram_add(void)
 	atomic_set(&zram->pp_in_progress, 0);
 	zram_comp_params_reset(zram);
 	comp_algorithm_set(zram, ZRAM_PRIMARY_COMP, default_compressor);
+#ifdef CONFIG_ZRAM_MULTI_COMP
+	zram_set_default_recompressor(zram);
+	INIT_DELAYED_WORK(&zram->recomp_work, zram_recomp_work_fn);
+	if (recomp_interval_sec)
+		queue_delayed_work(system_power_efficient_wq, &zram->recomp_work,
+				   (unsigned long)recomp_interval_sec * HZ);
+#endif
 
 	/* Actual capacity set using sysfs (/sys/block/zram<id>/disksize */
 	set_capacity(zram->disk, 0);
@@ -3484,6 +3538,9 @@ static int zram_remove(struct zram *zram)
 	mutex_unlock(&zram->disk->open_mutex);
 
 	zram_debugfs_unregister(zram);
+#ifdef CONFIG_ZRAM_MULTI_COMP
+	cancel_delayed_work_sync(&zram->recomp_work);
+#endif
 
 	if (claimed) {
 		/*
