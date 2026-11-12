@@ -239,8 +239,24 @@ int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
 				      selinux_policycap_netlink_xperm());
 }
 
-/* The pre-netlink_xperm mapping (nlmsg_read, nlmsg_write, ...) */
+/*
+ * The pre-netlink_xperm mapping as Android policy uses it (the 6.12 ACK
+ * android_netlink_route/getneigh mapping): RTM_GETLINK needs nlmsg_readpriv
+ * and RTM_GETNEIGH/RTM_GETNEIGHTBL need nlmsg_getneigh, so apps never get
+ * MAC addresses or neighbours through the redwood.nlmsg_legacy fallback.
+ */
 int selinux_nlmsg_lookup_legacy(u16 sclass, u16 nlmsg_type, u32 *perm)
 {
+	if (sclass == SECCLASS_NETLINK_ROUTE_SOCKET) {
+		switch (nlmsg_type) {
+		case RTM_GETLINK:
+			*perm = NETLINK_ROUTE_SOCKET__NLMSG_READPRIV;
+			return 0;
+		case RTM_GETNEIGH:
+		case RTM_GETNEIGHTBL:
+			*perm = NETLINK_ROUTE_SOCKET__NLMSG_GETNEIGH;
+			return 0;
+		}
+	}
 	return __selinux_nlmsg_lookup(sclass, nlmsg_type, perm, false);
 }
