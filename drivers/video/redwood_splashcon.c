@@ -25,7 +25,8 @@ static uint stride;
 module_param(stride, uint, 0444);
 static uint scale = 1;
 module_param(scale, uint, 0444);
-static bool enable = true;
+/* off unless asked for: Android boots keep the bootloader's logo */
+static bool enable;
 module_param(enable, bool, 0444);
 
 static u8 *fb;
