@@ -54,6 +54,31 @@ static unsigned int __read_mostly sysctl_oops_all_cpu_backtrace;
 #endif /* CONFIG_SMP */
 
 int panic_on_oops = IS_ENABLED(CONFIG_PANIC_ON_OOPS);
+
+/*
+ * redwood bring-up: with redwood.oops_continue on the command line an oops
+ * only kills the task that hit it, whatever userspace writes to
+ * kernel.panic_on_oops, so a logger can still save the whole report.
+ */
+static bool oops_continue;
+
+static int __init oops_continue_setup(char *s)
+{
+	oops_continue = true;
+	panic_on_oops = 0;
+	return 1;
+}
+__setup("redwood.oops_continue", oops_continue_setup);
+
+static int panic_on_oops_handler(const struct ctl_table *table, int write,
+				 void *buffer, size_t *lenp, loff_t *ppos)
+{
+	int ret = proc_dointvec(table, write, buffer, lenp, ppos);
+
+	if (write && oops_continue)
+		panic_on_oops = 0;
+	return ret;
+}
 static unsigned long tainted_mask =
 	IS_ENABLED(CONFIG_RANDSTRUCT) ? (1 << TAINT_RANDSTRUCT) : 0;
 static int pause_on_oops;
@@ -166,7 +191,7 @@ static const struct ctl_table kern_panic_table[] = {
 		.data		= &panic_on_oops,
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
+		.proc_handler	= panic_on_oops_handler,
 	},
 	{
 		.procname	= "panic_print",
