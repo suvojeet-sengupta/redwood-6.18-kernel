@@ -902,6 +902,9 @@ struct task_struct {
 	struct sched_dl_entity		*dl_server;
 #ifdef CONFIG_SCHED_CLASS_EXT
 	struct sched_ext_entity		scx;
+#else
+	/* Room for scx, so the layout matches the android17-6.18 GKI KMI */
+	u64				__scx_pad[25];
 #endif
 	const struct sched_class	*sched_class;
 
@@ -1694,6 +1697,10 @@ struct task_struct {
 	ANDROID_KABI_RESERVE(2);
 	ANDROID_KABI_RESERVE(3);
 	ANDROID_KABI_RESERVE(4);
+	ANDROID_KABI_RESERVE(5);
+	ANDROID_KABI_RESERVE(6);
+	ANDROID_KABI_RESERVE(7);
+	ANDROID_KABI_RESERVE(8);
 
 #ifdef CONFIG_RV
 	/*

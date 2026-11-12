@@ -509,12 +509,11 @@ struct module {
 	unsigned int num_bpf_raw_events;
 	struct bpf_raw_event_map *bpf_raw_events;
 #endif
-#ifdef CONFIG_DEBUG_INFO_BTF_MODULES
+	/* Kept without BTF too, so the layout matches the android17-6.18 GKI KMI */
 	unsigned int btf_data_size;
 	unsigned int btf_base_data_size;
 	void *btf_data;
 	void *btf_base_data;
-#endif
 #ifdef CONFIG_JUMP_LABEL
 	struct jump_entry *jump_entries;
 	unsigned int num_jump_entries;
