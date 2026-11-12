@@ -9,10 +9,13 @@
 #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
 #include <linux/spinlock.h>
 #include <linux/wait.h>
+#include <linux/uidgid.h>
 
 #include <net/sock.h>
 
 #include "qrtr.h"
+
+#define AID_VENDOR_QRTR	KGIDT_INIT(2906)
 
 #define QRTR_PROTO_VER_1 1
 #define QRTR_PROTO_VER_2 3
@@ -723,7 +726,7 @@ static void qrtr_port_remove(struct qrtr_sock *ipc)
  *
  * Port may be:
  *   0: Assign ephemeral port in [QRTR_MIN_EPH_SOCKET, QRTR_MAX_EPH_SOCKET]
- *   <QRTR_MIN_EPH_SOCKET: Specified; requires CAP_NET_ADMIN
+ *   <QRTR_MIN_EPH_SOCKET: Specified; requires CAP_NET_ADMIN, vendor_qrtr or root group
  *   >QRTR_MIN_EPH_SOCKET: Specified; available to all
  */
 static int qrtr_port_assign(struct qrtr_sock *ipc, int *port)
@@ -733,7 +736,10 @@ static int qrtr_port_assign(struct qrtr_sock *ipc, int *port)
 	if (!*port) {
 		rc = xa_alloc(&qrtr_ports, port, ipc, QRTR_EPH_PORT_RANGE,
 				GFP_KERNEL);
-	} else if (*port < QRTR_MIN_EPH_SOCKET && !capable(CAP_NET_ADMIN)) {
+	} else if (*port < QRTR_MIN_EPH_SOCKET &&
+		   !(capable(CAP_NET_ADMIN) ||
+		     in_egroup_p(AID_VENDOR_QRTR) ||
+		     in_egroup_p(GLOBAL_ROOT_GID))) {
 		rc = -EACCES;
 	} else if (*port == QRTR_PORT_CTRL) {
 		rc = xa_insert(&qrtr_ports, 0, ipc, GFP_KERNEL);
