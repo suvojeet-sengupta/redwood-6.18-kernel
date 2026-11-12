@@ -24,6 +24,8 @@
 #include <linux/spinlock.h>
 #include <linux/circ_buf.h>
 #include <linux/ktime.h>
+#include <linux/topology.h>
+#include <linux/workqueue.h>
 #include <linux/perf_event.h>
 #include <linux/errno.h>
 #include <linux/topology.h>
@@ -113,8 +115,41 @@ static struct kobj_attribute splh_notify_attr =
 	__ATTR(splh_notify, 0644, get_splh_notif, set_splh_notif);
 #endif
 
+/* defined with their defaults below, next to smart_min_freq() */
+static unsigned int smart_boost, little_boost_cap, big_boost_cap,
+	prime_boost, boost_expire_ms;
+
+#define SMART_ATTR(_name)						\
+static ssize_t _name##_show(struct kobject *kobj,			\
+		struct kobj_attribute *attr, char *buf)			\
+{									\
+	return sysfs_emit(buf, "%u\n", _name);				\
+}									\
+static ssize_t _name##_store(struct kobject *kobj,			\
+		struct kobj_attribute *attr, const char *buf, size_t n)	\
+{									\
+	unsigned int val;						\
+									\
+	if (kstrtouint(buf, 0, &val))					\
+		return -EINVAL;						\
+	WRITE_ONCE(_name, val);						\
+	return n;							\
+}									\
+static struct kobj_attribute _name##_attr = __ATTR_RW(_name)
+
+SMART_ATTR(smart_boost);
+SMART_ATTR(little_boost_cap);
+SMART_ATTR(big_boost_cap);
+SMART_ATTR(prime_boost);
+SMART_ATTR(boost_expire_ms);
+
 static struct attribute *param_attrs[] = {
 	&cpu_min_freq_attr.attr,
+	&smart_boost_attr.attr,
+	&little_boost_cap_attr.attr,
+	&big_boost_cap_attr.attr,
+	&prime_boost_attr.attr,
+	&boost_expire_ms_attr.attr,
 	&cpu_max_freq_attr.attr,
 	&inst_attr.attr,
 	&core_ctl_register_attr.attr,
@@ -173,6 +208,55 @@ struct cpu_status {
 static DEFINE_PER_CPU(struct cpu_status, msm_perf_cpu_stats);
 static DEFINE_PER_CPU(struct freq_qos_request, qos_req_min);
 static DEFINE_PER_CPU(struct freq_qos_request, qos_req_max);
+
+/*
+ * redwood: the perf HAL's frequency floors were tuned for WALT. Under EAS
+ * and schedutil they kept every cluster, the prime core included, high
+ * while the phone idled. Keep the boosts, but let the scheduler decide:
+ * the prime core takes no floor (EAS moves work there when it needs it),
+ * the little and big clusters are floored at most to efficient points,
+ * and a floor nobody refreshes expires.
+ */
+/*
+ * Tunables live next to cpu_min_freq in this driver's own parameters
+ * directory: module_param() would claim /sys/module/msm_performance/
+ * parameters first and the driver's directory would fail to register.
+ */
+static unsigned int smart_boost = 1;
+static unsigned int little_boost_cap = 1152000;
+static unsigned int big_boost_cap = 1516800;
+static unsigned int prime_boost;
+static unsigned int boost_expire_ms = 3000;
+
+static unsigned int smart_min_freq(int cpu, unsigned int val)
+{
+	unsigned long cap = topology_get_cpu_scale(cpu);
+
+	if (!smart_boost || !val)
+		return val;
+	if (cap >= SCHED_CAPACITY_SCALE)
+		return prime_boost ? min(val, big_boost_cap) : 0;
+	if (cap < SCHED_CAPACITY_SCALE / 2)
+		return min(val, little_boost_cap);
+	return min(val, big_boost_cap);
+}
+
+static void min_freq_expire_fn(struct work_struct *work)
+{
+	struct cpu_status *st;
+	int cpu;
+
+	cpus_read_lock();
+	for_each_possible_cpu(cpu) {
+		st = &per_cpu(msm_perf_cpu_stats, cpu);
+		if (!st->min)
+			continue;
+		st->min = 0;
+		freq_qos_update_request(&per_cpu(qos_req_min, cpu), 0);
+	}
+	cpus_read_unlock();
+}
+static DECLARE_DELAYED_WORK(min_freq_expire_work, min_freq_expire_fn);
 
 static cpumask_var_t limit_mask_min;
 static cpumask_var_t limit_mask_max;
@@ -289,6 +373,7 @@ static ssize_t set_cpu_min_freq(struct kobject *kobj,
 	const char *cp = buf;
 	struct cpu_status *i_cpu_stats;
 	struct freq_qos_request *req;
+	bool boosted = false;
 	int ret = 0;
 
 	mutex_lock(&freq_pmqos_lock);
@@ -322,7 +407,9 @@ static ssize_t set_cpu_min_freq(struct kobject *kobj,
 		if (cpu_possible(cpu)) {
 			i_cpu_stats = &per_cpu(msm_perf_cpu_stats, cpu);
 
-			i_cpu_stats->min = val;
+			i_cpu_stats->min = smart_min_freq(cpu, val);
+			if (i_cpu_stats->min)
+				boosted = true;
 			cpumask_set_cpu(cpu, limit_mask_min);
 		}
 
@@ -347,6 +434,17 @@ static ssize_t set_cpu_min_freq(struct kobject *kobj,
 
 	}
 	cpus_read_unlock();
+
+	if (smart_boost && boost_expire_ms) {
+		for_each_possible_cpu(cpu)
+			if (per_cpu(msm_perf_cpu_stats, cpu).min)
+				boosted = true;
+		if (boosted)
+			mod_delayed_work(system_wq, &min_freq_expire_work,
+					 msecs_to_jiffies(boost_expire_ms));
+		else
+			cancel_delayed_work(&min_freq_expire_work);
+	}
 
 	return count;
 }
