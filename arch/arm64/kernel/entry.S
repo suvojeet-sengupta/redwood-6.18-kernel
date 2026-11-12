@@ -51,11 +51,11 @@
 	mov	x30, xzr
 	.endif
 .Lskip_tramp_vectors_cleanup\@:
-	sub	sp, sp, #PT_REGS_SIZE
-	.else	/* \el == 1 */
-	.ifc	\ht, h
+	.endif
+
 	sub	sp, sp, #PT_REGS_SIZE
 
+	.if	\el == 1
 	/*
 	 * Test whether the SP has overflowed, without corrupting a GPR.
 	 * Task and IRQ stacks are aligned so that SP & (1 << THREAD_SHIFT)
@@ -63,16 +63,45 @@
 	 */
 	add	sp, sp, x0			// sp' = sp + x0
 	sub	x0, sp, x0			// x0' = sp' - x0 = (sp + x0) - x0 = sp
-	tbnz	x0, #THREAD_SHIFT, __bad_stack
+	tbnz	x0, #THREAD_SHIFT, 0f
 	sub	x0, sp, x0			// x0'' = sp' - x0' = (sp + x0) - sp = x0
 	sub	sp, sp, x0			// sp'' = sp' - x0 = (sp + x0) - x0 = sp
-	.else	/* EL1t */
-	msr	spsel, #0			// Stay on the overflow stack
-	sub	sp, sp, #PT_REGS_SIZE
-	.endif
 	.endif
 
 	b	el\el\ht\()_\regsize\()_\label
+
+	.if	\el == 1
+0:
+	/*
+	 * Either we've just detected an overflow, or we've taken an exception
+	 * while on the overflow stack. Either way, we won't return to
+	 * userspace, and can clobber EL0 registers to free up GPRs.
+	 */
+
+	/* Stash the original SP (minus PT_REGS_SIZE) in tpidr_el0. */
+	msr	tpidr_el0, x0
+
+	/* Recover the original x0 value and stash it in sp_el0 */
+	sub	x0, sp, x0
+	msr	sp_el0, x0
+
+	/* Switch to the overflow stack */
+	adr_this_cpu sp, overflow_stack + OVERFLOW_STACK_SIZE, x0
+
+	/*
+	 * Check whether we were already on the overflow stack. This may happen
+	 * after panic() re-enables interrupts.
+	 */
+	mrs	x0, tpidr_el0			// sp of interrupted context
+	sub	x0, sp, x0			// delta with top of overflow stack
+	tst	x0, #~(OVERFLOW_STACK_SIZE - 1)	// within range?
+	b.ne	__bad_stack			// no? -> bad stack pointer
+
+	/* We were already on the overflow stack. Restore sp/x0 and carry on. */
+	sub	sp, sp, x0
+	mrs	x0, sp_el0
+	b	el\el\ht\()_\regsize\()_\label
+	.endif
 .org .Lventry_start\@ + 128	// Did we overflow the ventry slot?
 	.endm
 
@@ -521,24 +550,22 @@ SYM_CODE_END(vectors)
 
 SYM_CODE_START_LOCAL(__bad_stack)
 	/*
-	 * We detected an overflow in kernel_ventry.
-	 * Restore SP and X0.
+	 * We detected an overflow in kernel_ventry, which switched to the
+	 * overflow stack. Stash the exception regs, and head to our overflow
+	 * handler.
 	 */
-	sub	x0, sp, x0
-	sub	sp, sp, x0
-	add	sp, sp, #PT_REGS_SIZE
 
-	/* Switch to the overflow stack */
-	msr	spsel, #0
+	/* Restore the original x0 value */
+	mrs	x0, sp_el0
 
-	/* Stash the exception regs */
+	/*
+	 * Store the original GPRs to the new stack. The orginal SP (minus
+	 * PT_REGS_SIZE) was stashed in tpidr_el0 by kernel_ventry.
+	 */
 	sub	sp, sp, #PT_REGS_SIZE
 	kernel_entry 1
-
-	/* Fix-up the saved SP */
-	msr	spsel, #1
-	mov	x0, sp
-	msr	spsel, #0
+	mrs	x0, tpidr_el0
+	add	x0, x0, #PT_REGS_SIZE
 	str	x0, [sp, #S_SP]
 
 	/* Stash the regs for handle_bad_stack */
