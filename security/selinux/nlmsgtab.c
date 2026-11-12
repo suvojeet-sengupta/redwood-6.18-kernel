@@ -165,7 +165,8 @@ static int nlmsg_perm(u16 nlmsg_type, u32 *perm, const struct nlmsg_perm *tab,
 	return err;
 }
 
-int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
+static int __selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm,
+				  bool xperm)
 {
 	/* While it is possible to add a similar permission to other netlink
 	 * classes, note that the extended permission value is matched against
@@ -183,7 +184,7 @@ int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
 		 */
 		BUILD_BUG_ON(RTM_MAX != (RTM_NEWTUNNEL + 3));
 
-		if (selinux_policycap_netlink_xperm()) {
+		if (xperm) {
 			*perm = NETLINK_ROUTE_SOCKET__NLMSG;
 			return 0;
 		}
@@ -191,7 +192,7 @@ int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
 				  sizeof(nlmsg_route_perms));
 		break;
 	case SECCLASS_NETLINK_TCPDIAG_SOCKET:
-		if (selinux_policycap_netlink_xperm()) {
+		if (xperm) {
 			*perm = NETLINK_TCPDIAG_SOCKET__NLMSG;
 			return 0;
 		}
@@ -205,7 +206,7 @@ int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
 		 */
 		BUILD_BUG_ON(XFRM_MSG_MAX != XFRM_MSG_GETDEFAULT);
 
-		if (selinux_policycap_netlink_xperm()) {
+		if (xperm) {
 			*perm = NETLINK_XFRM_SOCKET__NLMSG;
 			return 0;
 		}
@@ -213,7 +214,7 @@ int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
 				  sizeof(nlmsg_xfrm_perms));
 		break;
 	case SECCLASS_NETLINK_AUDIT_SOCKET:
-		if (selinux_policycap_netlink_xperm()) {
+		if (xperm) {
 			*perm = NETLINK_AUDIT_SOCKET__NLMSG;
 			return 0;
 		} else if ((nlmsg_type >= AUDIT_FIRST_USER_MSG &&
@@ -230,4 +231,16 @@ int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
 
 	/* No messaging from userspace, or class unknown/unhandled */
 	return -ENOENT;
+}
+
+int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
+{
+	return __selinux_nlmsg_lookup(sclass, nlmsg_type, perm,
+				      selinux_policycap_netlink_xperm());
+}
+
+/* The pre-netlink_xperm mapping (nlmsg_read, nlmsg_write, ...) */
+int selinux_nlmsg_lookup_legacy(u16 sclass, u16 nlmsg_type, u32 *perm)
+{
+	return __selinux_nlmsg_lookup(sclass, nlmsg_type, perm, false);
 }

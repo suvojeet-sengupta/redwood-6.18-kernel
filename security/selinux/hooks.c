@@ -6122,6 +6122,21 @@ static int nlmsg_sock_has_extended_perms(struct sock *sk, u32 perms, u16 nlmsg_t
 				      perms, driver, AVC_EXT_NLMSG, xperm, &ad);
 }
 
+/*
+ * redwood: a vendor policy written for kernels before 6.13 only grants
+ * nlmsg_read/nlmsg_write. With redwood.nlmsg_legacy, a netlink message the
+ * per-type nlmsg check refuses still passes if the old mapping allows it, so
+ * such a vendor runs on 6.18 before its policy learns the xperm rules.
+ */
+static bool nlmsg_legacy_fallback;
+
+static int __init nlmsg_legacy_setup(char *s)
+{
+	nlmsg_legacy_fallback = true;
+	return 1;
+}
+__setup("redwood.nlmsg_legacy", nlmsg_legacy_setup);
+
 static int selinux_netlink_send(struct sock *sk, struct sk_buff *skb)
 {
 	int rc = 0;
@@ -6150,6 +6165,14 @@ static int selinux_netlink_send(struct sock *sk, struct sk_buff *skb)
 			if (selinux_policycap_netlink_xperm()) {
 				rc = nlmsg_sock_has_extended_perms(
 					sk, perm, nlh->nlmsg_type);
+				if (rc && nlmsg_legacy_fallback) {
+					u32 lperm;
+
+					if (!selinux_nlmsg_lookup_legacy(sclass,
+							nlh->nlmsg_type, &lperm) &&
+					    !sock_has_perm(sk, lperm))
+						rc = 0;
+				}
 			} else {
 				rc = sock_has_perm(sk, perm);
 			}
