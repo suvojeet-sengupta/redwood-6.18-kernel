@@ -9,6 +9,7 @@
 #include <linux/font.h>
 #include <linux/io.h>
 #include <linux/module.h>
+#include <linux/notifier.h>
 #include <linux/spinlock.h>
 #include <asm/cacheflush.h>
 
@@ -24,6 +25,8 @@ static uint stride;
 module_param(stride, uint, 0444);
 static uint scale = 1;
 module_param(scale, uint, 0444);
+static bool enable = true;
+module_param(enable, bool, 0444);
 
 static u8 *fb;
 static bool cached;
@@ -78,7 +81,7 @@ static void splash_write(struct console *con, const char *s, unsigned int n)
 	unsigned long flags;
 
 	spin_lock_irqsave(&lock, flags);
-	while (n--) {
+	while (fb && n--) {
 		u8 ch = *s++;
 
 		if (ch == '\n') {
@@ -140,8 +143,41 @@ static bool find_scanout(void)
 	return false;
 }
 
+/*
+ * msm_drm takes the display over and hands the splash memory back to the
+ * page allocator. Drawing into it after that scribbles over whatever the
+ * kernel reuses it for (opaque black is 0xff000000 in a 4 byte pixel, which
+ * turned up as pointers in oopses all over the kernel), so stop the moment
+ * the display driver comes in.
+ */
+static int splashcon_module_cb(struct notifier_block *nb, unsigned long action,
+			       void *data)
+{
+	struct module *mod = data;
+	unsigned long flags;
+	u8 *old;
+
+	if (action != MODULE_STATE_COMING || strcmp(mod->name, "msm_drm"))
+		return NOTIFY_DONE;
+	unregister_console(&splash_console);
+	spin_lock_irqsave(&lock, flags);
+	old = fb;
+	fb = NULL;
+	spin_unlock_irqrestore(&lock, flags);
+	if (old)
+		memunmap(old);
+	pr_info("splashcon: msm_drm takes the display, stopping\n");
+	return NOTIFY_OK;
+}
+
+static struct notifier_block splashcon_module_nb = {
+	.notifier_call = splashcon_module_cb,
+};
+
 static int __init splashcon_init(void)
 {
+	if (!enable)
+		return 0;
 	/*
 	 * Fall back to the splash_region the device tree reserves when the
 	 * display pipe can't be read this early.
@@ -160,6 +196,7 @@ static int __init splashcon_init(void)
 	rows = height / (16 * scale);
 	fill(0, 0, width, height, 0xff00ff);
 	register_console(&splash_console);
+	register_module_notifier(&splashcon_module_nb);
 	return 0;
 }
 
