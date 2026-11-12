@@ -3036,13 +3036,7 @@ static void arm_smmu_get_resv_regions(struct device *dev,
 
 	list_add_tail(&region->list, head);
 
-	/*
-	 * Bring-up: 6.18's of_iommu_get_resv_regions() oopses on redwood's
-	 * device tree while the SMMU registers. Skip the device tree reserved
-	 * regions until that is understood; only the splash handover needs them.
-	 */
-	if (!IS_ENABLED(CONFIG_REDWOOD_SPLASHCON))
-		iommu_dma_get_resv_regions(dev, head);
+	iommu_dma_get_resv_regions(dev, head);
 }
 
 static int arm_smmu_def_domain_type(struct device *dev)

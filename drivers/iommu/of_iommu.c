@@ -242,18 +242,45 @@ void of_iommu_get_resv_regions(struct device *dev, struct list_head *list)
 
 			phandle = be32_to_cpup(maps++);
 			np = of_find_node_by_phandle(phandle);
+			if (!np)
+				break;
 
-			if (np == dev->of_node) {
+			if (np != dev->of_node) {
+				/* an entry for another device: step over it */
+				maps += of_n_addr_cells(np) + of_n_size_cells(np);
+				of_node_put(np);
+				continue;
+			}
+
+			{
 				int prot = IOMMU_READ | IOMMU_WRITE;
 				struct iommu_resv_region *region;
 				enum iommu_resv_type type;
+				const __be32 *next;
 				phys_addr_t iova;
 				size_t length;
 
 				if (of_dma_is_coherent(dev->of_node))
 					prot |= IOMMU_CACHE;
 
-				maps = of_translate_dma_region(np, maps, &iova, &length);
+				next = of_translate_dma_region(np, maps, &iova, &length);
+				if (!next) {
+					/*
+					 * of_match_bus() no longer matches a parent
+					 * without #address-cells (Qualcomm's SMMU
+					 * context bank nodes), so the translation
+					 * fails where it used to be 1:1. Read the
+					 * cells as they are, as before.
+					 */
+					int na = of_n_addr_cells(np);
+					int ns = of_n_size_cells(np);
+
+					iova = of_read_number(maps, na);
+					length = of_read_number(maps + na, ns);
+					next = maps + na + ns;
+				}
+				maps = next;
+				of_node_put(np);
 				if (length == 0) {
 					dev_warn(dev, "Cannot reserve IOVA region of 0 size\n");
 					continue;
