@@ -87,9 +87,15 @@ static bool __of_node_is_type(const struct device_node *np, const char *type)
 	return np && match && type && !strcmp(match, type);
 }
 
+/*
+ * Qualcomm's yupik (SM7325) devicetree leaves #address-cells/#size-cells out
+ * of bus nodes such as the camera SMMU context bank parent and relies on
+ * them being inherited, as they were up to 6.12.
+ */
 #define EXCLUDED_DEFAULT_CELLS_PLATFORMS ( \
 	IS_ENABLED(CONFIG_SPARC) || \
-	of_find_compatible_node(NULL, NULL, "coreboot") \
+	of_find_compatible_node(NULL, NULL, "coreboot") || \
+	of_machine_is_compatible("qcom,yupik") \
 )
 
 int of_bus_n_addr_cells(struct device_node *np)
