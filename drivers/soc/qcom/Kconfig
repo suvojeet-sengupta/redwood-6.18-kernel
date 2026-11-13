@@ -160,6 +160,17 @@ config QCOM_RPM_MASTER_STATS
 
 	  Say y here if you intend to debug or monitor platform sleep.
 
+config QCOM_LPM_CLUSTER_DEV
+	bool "Qualcomm LPM cluster device"
+	depends on ARCH_QCOM && ARM_PSCI_CPUIDLE_DOMAIN
+	help
+	  Binds the "qcom,lpm-cluster-dev" device tree node, a consumer of
+	  the CPU cluster power domain meant for Qualcomm's qcom_lpm cluster
+	  governor. Without a driver for it genpd keeps the cluster domain
+	  powered on for good, so the CPU cluster never enters its idle
+	  states and the SoC never reaches system sleep. Say Y on Qualcomm
+	  device trees that carry this node when qcom_lpm isn't used.
+
 config QCOM_RPMH
 	tristate "Qualcomm RPM-Hardened (RPMH) Communication"
 	depends on ARCH_QCOM || COMPILE_TEST
