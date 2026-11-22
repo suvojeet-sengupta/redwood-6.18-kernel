@@ -24,6 +24,7 @@
 #include <linux/mmap_lock.h>
 #include <linux/hugetlb_inline.h>
 #include <linux/jiffies.h>
+#include <linux/math.h>
 #include <linux/mm_api.h>
 #include <linux/highmem.h>
 #include <linux/spinlock_api.h>
@@ -783,6 +784,61 @@ u64 avg_vruntime(struct cfs_rq *cfs_rq)
 	return cfs_rq->zero_vruntime;
 }
 
+/*
+ *     \Sum (v_i - v0)*w_i
+ * V = ------------------- + v0
+ *          \Sum w_i
+ *
+ * Let W = \Sum w_i, and move v_j such that 'v_j == V', thus:
+ *
+ * V = 1/W * {(v_j - v0)*w_j + \Sum_i!=j (v_i - v0)*w_i} + v0
+ *
+ * v_j = 1/W * {(v_j - v0)*w_j + \Sum_i!=j (v_i - v0)*w_i} + v0
+ *
+ * v_j = 1/W * (v_j - v0)*w_j + 1/W * \Sum_i!=j (v_i - v0)*w_i + v0
+ *
+ * v_j - 1/W * (v_j - v0)*w_j = 1/W * \Sum_i!=j (v_i - v0)*w_i + v0
+ *
+ * v_j*W - (v_j - v0)*w_j = \Sum_i!=j (v_i - v0)*w_i + v0*W
+ *
+ * v_j*(W - w_j) + v0*w_j = \Sum_i!=j (v_i - v0)*w_i + v0*W
+ *
+ * v_j*(W - w_j) = \Sum_i!=j (v_i - v0)*w_i + v0*(W - w_j)
+ *
+ *       \Sum_i!=j (v_i - v0)*w_i
+ * v_j = ------------------------ + v0
+ *               W - w_j
+ *
+ * When v_j happens to be curr, then '\Sum_i!=j (v_i - v0)*w_i'
+ * is cfs_rq->sum_w_runtime, and 'W - w_j' is cfs_rq->sum_weight, since curr
+ * is not included in the sum.
+ */
+static u64 ineligible_vruntime(struct cfs_rq *cfs_rq)
+{
+	struct sched_entity *curr = cfs_rq->curr;
+	long weight = cfs_rq->sum_weight;
+	s64 delta = 0;
+
+	if (curr && !curr->on_rq)
+		curr = NULL;
+
+	if (weight) {
+		s64 runtime = cfs_rq->sum_w_vruntime;
+
+		/*
+		 * Do not add @curr to obtain the effective '- w_j' terms.
+		 */
+
+		/* sign flips effective floor / ceiling */
+		if (runtime < 0)
+			runtime -= (weight - 1);
+
+		delta = div64_long(runtime, weight);
+	}
+
+	return cfs_rq->zero_vruntime + delta + 1;
+}
+
 static inline u64 cfs_rq_max_slice(struct cfs_rq *cfs_rq);
 
 /*
@@ -1045,17 +1101,27 @@ static inline void set_protect_slice(struct cfs_rq *cfs_rq, struct sched_entity 
 		slice = cfs_rq_min_slice(cfs_rq);
 
 	slice = min(slice, se->slice);
-	if (slice != se->slice)
+
+	/* If there are shorter slices than se's one */
+	if (slice != se->slice) {
 		vprot = min_vruntime(vprot, se->vruntime + calc_delta_fair(slice, se));
+		if (sched_feat(PREEMPT_SHORT))
+			vprot = min_vruntime(vprot, ineligible_vruntime(cfs_rq));
+	}
 
 	se->vprot = vprot;
 }
 
 static inline void update_protect_slice(struct cfs_rq *cfs_rq, struct sched_entity *se)
 {
+	u64 vruntime = min_vruntime(se->vruntime, avg_vruntime(cfs_rq));
 	u64 slice = cfs_rq_min_slice(cfs_rq);
+	u64 vprot = min_vruntime(se->vprot, vruntime + calc_delta_fair(slice, se));
 
-	se->vprot = min_vruntime(se->vprot, se->vruntime + calc_delta_fair(slice, se));
+	if (sched_feat(PREEMPT_SHORT) && slice != se->slice)
+		vprot = min_vruntime(vprot, ineligible_vruntime(cfs_rq));
+
+	se->vprot = vprot;
 }
 
 static inline bool protect_slice(struct sched_entity *se)
@@ -5498,14 +5564,25 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 		 *
 		 *   vl_i = (W + w_i)*vl'_i / W
 		 */
+		long weight;
+
 		load = cfs_rq->sum_weight;
 		if (curr && curr->on_rq)
 			load += scale_load_down(curr->load.weight);
-
-		lag *= load + scale_load_down(se->load.weight);
 		if (WARN_ON_ONCE(!load))
 			load = 1;
-		lag = div_s64(lag, load);
+
+		weight = scale_load_down(se->load.weight);
+
+		/*
+		 * Rewrite, because the product (W + w_i)*vl'_i might
+		 * overflow s64:
+		 *
+		 *   vl_i = (W + w_i)*vl'_i / W
+		 *        = (W*vl'_i + w_i*vl'_i) / W
+		 *        = vl'_i + w_i*vl'_i/W
+		 */
+		lag += div_s64(lag * weight, load);
 	}
 
 	se->vruntime = vruntime - lag;
@@ -7112,7 +7189,7 @@ static inline void hrtick_update(struct rq *rq)
 
 static inline bool cpu_overutilized(int cpu)
 {
-	unsigned long  rq_util_min, rq_util_max;
+	unsigned long rq_util_max;
 	int overutilized = -1;
 
 	trace_android_rvh_cpu_overutilized(cpu, &overutilized);
@@ -7122,11 +7199,10 @@ static inline bool cpu_overutilized(int cpu)
 	if (!sched_energy_enabled())
 		return false;
 
-	rq_util_min = uclamp_rq_get(cpu_rq(cpu), UCLAMP_MIN);
 	rq_util_max = uclamp_rq_get(cpu_rq(cpu), UCLAMP_MAX);
 
 	/* Return true only if the utilization doesn't fit CPU's capacity */
-	return !util_fits_cpu(cpu_util_cfs(cpu), rq_util_min, rq_util_max, cpu);
+	return !util_fits_cpu(cpu_util_cfs(cpu), 0, rq_util_max, cpu);
 }
 
 /*
@@ -7725,8 +7801,8 @@ static int
 sched_balance_find_dst_group_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
 {
 	unsigned long load, min_load = ULONG_MAX;
-	unsigned int min_exit_latency = UINT_MAX;
-	u64 latest_idle_timestamp = 0;
+	u64 min_exit_latency = U64_MAX;
+	unsigned int nr_candidates = 0;
 	int least_loaded_cpu = this_cpu;
 	int shallowest_idle_cpu = -1;
 	int i;
@@ -7747,24 +7823,16 @@ sched_balance_find_dst_group_cpu(struct sched_group *group, struct task_struct *
 
 		if (available_idle_cpu(i)) {
 			struct cpuidle_state *idle = idle_get_state(rq);
-			if (idle && idle->exit_latency < min_exit_latency) {
-				/*
-				 * We give priority to a CPU whose idle state
-				 * has the smallest exit latency irrespective
-				 * of any idle timestamp.
-				 */
-				min_exit_latency = idle->exit_latency;
-				latest_idle_timestamp = rq->idle_stamp;
+			u64 exit_latency = idle ? idle->exit_latency : U64_MAX;
+
+			if (shallowest_idle_cpu == -1 || exit_latency < min_exit_latency) {
+				min_exit_latency = exit_latency;
 				shallowest_idle_cpu = i;
-			} else if ((!idle || idle->exit_latency == min_exit_latency) &&
-				   rq->idle_stamp > latest_idle_timestamp) {
-				/*
-				 * If equal or no active idle state, then
-				 * the most recently idled CPU might have
-				 * a warmer cache.
-				 */
-				latest_idle_timestamp = rq->idle_stamp;
-				shallowest_idle_cpu = i;
+				nr_candidates = 1;
+			} else if (exit_latency == min_exit_latency) {
+				nr_candidates++;
+				if (!reciprocal_scale(sched_rng(), nr_candidates))
+					shallowest_idle_cpu = i;
 			}
 		} else if (shallowest_idle_cpu == -1) {
 			load = cpu_load(cpu_rq(i));
@@ -9057,9 +9125,7 @@ enum preempt_wakeup_action {
 	PREEMPT_WAKEUP_RESCHED,	/* Force reschedule. */
 };
 
-static inline bool
-set_preempt_buddy(struct cfs_rq *cfs_rq, int wake_flags,
-		  struct sched_entity *pse, struct sched_entity *se)
+static inline bool set_preempt_buddy(struct cfs_rq *cfs_rq, struct sched_entity *pse)
 {
 	/*
 	 * Keep existing buddy if the deadline is sooner than pse.
@@ -9069,6 +9135,21 @@ set_preempt_buddy(struct cfs_rq *cfs_rq, int wake_flags,
 	 */
 	if (cfs_rq->next && entity_before(cfs_rq->next, pse))
 		return false;
+
+	set_next_buddy(pse);
+	return true;
+}
+
+static inline bool set_short_buddy(struct cfs_rq *cfs_rq, struct sched_entity *pse)
+{
+	if (cfs_rq->next) {
+		if (cfs_rq->next->slice < pse->slice)
+			return false;
+
+		if (cfs_rq->next->slice == pse->slice &&
+		    entity_before(cfs_rq->next, pse))
+			return false;
+	}
 
 	set_next_buddy(pse);
 	return true;
@@ -9150,7 +9231,7 @@ static void check_preempt_wakeup_fair(struct rq *rq, struct task_struct *p, int 
 	 * prevents us from potentially nominating it as a false LAST_BUDDY
 	 * below.
 	 */
-	if (test_tsk_need_resched(rq->curr))
+	if (!sched_feat(PREEMPT_SHORT) && test_tsk_need_resched(rq->curr))
 		return;
 
 	if (!sched_feat(WAKEUP_PREEMPTION))
@@ -9166,32 +9247,35 @@ static void check_preempt_wakeup_fair(struct rq *rq, struct task_struct *p, int 
 	 * Preempt an idle entity in favor of a non-idle entity (and don't preempt
 	 * in the inverse case).
 	 */
-	if (cse_is_idle && !pse_is_idle) {
-		/*
-		 * When non-idle entity preempt an idle entity,
-		 * don't give idle entity slice protection.
-		 */
-		preempt_action = PREEMPT_WAKEUP_SHORT;
+	if (cse_is_idle && !pse_is_idle)
 		goto preempt;
-	}
+
+	cfs_rq = cfs_rq_of(se);
+	update_curr(cfs_rq);
 
 	if (cse_is_idle != pse_is_idle)
-		return;
+		goto update;
 
 	/*
 	 * BATCH and IDLE tasks do not preempt others.
 	 */
 	if (unlikely(!normal_policy(p->policy)))
-		return;
+		goto update;
 
-	cfs_rq = cfs_rq_of(se);
-	update_curr(cfs_rq);
 	trace_android_rvh_check_preempt_wakeup_fair(rq, p, &preempt, &ignore,
 						wake_flags, se, pse);
 	if (preempt)
 		goto preempt;
 	if (ignore)
 		return;
+
+	/*
+	 * Do not preempt for tasks that are sched_delayed as it would violate
+	 * EEVDF to forcibly queue an ineligible task.
+	 */
+	if (pse->sched_delayed)
+		goto update;
+
 	/*
 	 * If @p has a shorter slice than current and @p is eligible, override
 	 * current's slice protection in order to allow preemption.
@@ -9203,17 +9287,13 @@ static void check_preempt_wakeup_fair(struct rq *rq, struct task_struct *p, int 
 
 	/*
 	 * Ignore wakee preemption on WF_FORK as it is less likely that
-	 * there is shared data as exec often follow fork. Do not
-	 * preempt for tasks that are sched_delayed as it would violate
-	 * EEVDF to forcibly queue an ineligible task.
+	 * there is shared data as exec often follow fork.
 	 */
-	if ((wake_flags & WF_FORK) || pse->sched_delayed)
-		return;
+	if (wake_flags & WF_FORK)
+		goto update;
 
 	/* Prefer picking wakee soon if appropriate. */
-	if (sched_feat(NEXT_BUDDY) &&
-	    set_preempt_buddy(cfs_rq, wake_flags, pse, se)) {
-
+	if (sched_feat(NEXT_BUDDY) && set_preempt_buddy(cfs_rq, pse)) {
 		/*
 		 * Decide whether to obey WF_SYNC hint for a new buddy. Old
 		 * buddies are ignored as they may not be relevant to the
@@ -9225,7 +9305,7 @@ static void check_preempt_wakeup_fair(struct rq *rq, struct task_struct *p, int 
 
 	switch (preempt_action) {
 	case PREEMPT_WAKEUP_NONE:
-		return;
+		goto update;
 	case PREEMPT_WAKEUP_RESCHED:
 		goto preempt;
 	case PREEMPT_WAKEUP_SHORT:
@@ -9248,14 +9328,24 @@ pick:
 	if (!nse && cfs_rq->nr_queued)
 		goto pick;
 
+	/*
+	 * If @p is eligible but not the next task to run then cancel protection
+	 * to prevent large scheduling latency
+	 */
+	if (preempt_action == PREEMPT_WAKEUP_SHORT && entity_eligible(cfs_rq, pse))
+		goto preempt;
+
+update:
 	if (sched_feat(RUN_TO_PARITY))
 		update_protect_slice(cfs_rq, se);
 
 	return;
 
 preempt:
+	cancel_protect_slice(se);
+
 	if (preempt_action == PREEMPT_WAKEUP_SHORT)
-		cancel_protect_slice(se);
+		set_short_buddy(cfs_rq, pse);
 
 	resched_curr_lazy(rq);
 }
@@ -10822,12 +10912,25 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 			continue;
 
 		if (sd_flags & SD_ASYM_CPUCAPACITY) {
-			/* Check for a misfit task on the cpu */
-			if (sgs->group_misfit_task_load < rq->misfit_task_load) {
-				sgs->group_misfit_task_load = rq->misfit_task_load;
-
+			if (rq->misfit_task_load) {
+				/*
+				 * Always mark the root domain overloaded so big
+				 * CPUs can pick up misfit tasks via newly idle
+				 * balance.
+				 */
 				if (balancing_at_rd)
 					*sg_overloaded = 1;
+
+				/*
+				 * Only account misfit load if @dst_cpu can
+				 * help; otherwise, the group may be classified
+				 * as misfit_task and update_sd_pick_busiest()
+				 * will skip it.
+				 */
+				if (capacity_greater(capacity_of(env->dst_cpu),
+						     group->sgc->max_capacity) &&
+				    (sgs->group_misfit_task_load < rq->misfit_task_load))
+					sgs->group_misfit_task_load = rq->misfit_task_load;
 			}
 		} else if (env->idle && sched_reduced_capacity(rq, env->sd)) {
 			/* Check for a task running on a CPU with reduced capacity */
@@ -11922,9 +12025,15 @@ static struct rq *sched_balance_find_src_rq(struct lb_env *env,
 		 * average load.
 		 */
 		if (env->sd->flags & SD_ASYM_CPUCAPACITY &&
-		    !capacity_greater(capacity_of(env->dst_cpu), capacity) &&
-		    nr_running == 1)
-			continue;
+		    nr_running == 1) {
+			bool cluster_equal_cap = static_branch_unlikely(&sched_cluster_active) &&
+						 (get_actual_cpu_capacity(env->dst_cpu) ==
+						  get_actual_cpu_capacity(i));
+
+			if (!cluster_equal_cap &&
+			    !capacity_greater(capacity_of(env->dst_cpu), capacity))
+				continue;
+		}
 
 		/*
 		 * Make sure we only pull tasks from a CPU of lower priority
