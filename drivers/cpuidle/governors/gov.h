@@ -10,5 +10,6 @@
  * check the time till the closest expected timer event.
  */
 #define RESIDENCY_THRESHOLD_NS	(15 * NSEC_PER_USEC)
+#define SAFE_TIMER_RANGE_NS	(2 * TICK_NSEC)
 
 #endif /* __CPUIDLE_GOVERNOR_H */
