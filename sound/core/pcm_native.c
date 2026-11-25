@@ -3375,6 +3375,22 @@ static int snd_pcm_forward_ioctl(struct snd_pcm_substream *substream,
 	return result < 0 ? result : 0;
 }
 
+/*
+ * Qualcomm's listen (LSM) PCMs take their own ioctls, of type 'U', which
+ * the sound trigger HAL issues on the PCM node. Hand those to the driver.
+ */
+static long snd_pcm_vendor_ioctl(struct snd_pcm_substream *substream,
+				 unsigned int cmd, void __user *arg)
+{
+	if (!substream || PCM_RUNTIME_CHECK(substream))
+		return -ENXIO;
+	if (substream->runtime->state == SNDRV_PCM_STATE_DISCONNECTED)
+		return -EBADFD;
+	if (!substream->ops->ioctl)
+		return -ENOTTY;
+	return substream->ops->ioctl(substream, cmd, (void __force *)arg);
+}
+
 static int snd_pcm_common_ioctl(struct file *file,
 				 struct snd_pcm_substream *substream,
 				 unsigned int cmd, void __user *arg)
@@ -3490,6 +3506,10 @@ static long snd_pcm_ioctl(struct file *file, unsigned int cmd,
 	struct snd_pcm_file *pcm_file;
 
 	pcm_file = file->private_data;
+
+	if (_IOC_TYPE(cmd) == 'U')
+		return snd_pcm_vendor_ioctl(pcm_file->substream, cmd,
+					    (void __user *)arg);
 
 	if (((cmd >> 8) & 0xff) != 'A')
 		return -ENOTTY;
