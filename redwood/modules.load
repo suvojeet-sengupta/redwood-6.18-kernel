@@ -4,9 +4,7 @@ clk-dummy.ko
 clk-qcom.ko
 clk-rpmh.ko
 gcc-sc7280.ko
-gcc-sm8350.ko
 dispcc-sc7280.ko
-dispcc-sm8350.ko
 gdsc-regulator.ko
 clk-scmi.ko
 qcom_dma_heaps.ko
@@ -18,7 +16,6 @@ icc-clk.ko
 icc-bcm-voter.ko
 icc-debug.ko
 icc-rpmh.ko
-qnoc-lahaina.ko
 qnoc-yupik.ko
 qnoc-qos.ko
 arm_smmu.ko
@@ -37,11 +34,8 @@ nvmem_qfprom.ko
 qcom_llcc_pmu.ko
 phy-qcom-ufs.ko
 phy-qcom-ufs-qmp-v4-yupik.ko
-phy-qcom-ufs-qmp-v4-lahaina.ko
-phy-qcom-ufs-qrbtc-sdm845.ko
 pinctrl-msm.ko
 pinctrl-yupik.ko
-pinctrl-lahaina.ko
 qcom-dload-mode.ko
 qcom-reboot-reason.ko
 debug-regulator.ko
@@ -81,13 +75,9 @@ qcom_ipc_logging.ko
 qrtr.ko
 zram.ko
 rdbg.ko
-camcc-sm8350.ko
 camcc-sc7280.ko
-debugcc-sm8350.ko
 debugcc-sc7280.ko
-gpucc-sm8350.ko
 gpucc-sc7280.ko
-videocc-sm8350.ko
 videocc-sc7280.ko
 qcom-cpufreq-hw.ko
 qcom-cpufreq-hw-debug.ko
@@ -118,10 +108,6 @@ leds-qti-flash.ko
 leds-qpnp-vibrator-ldo.ko
 qcom-i2c-pmic.ko
 qcom-pm8008.ko
-r8169.ko
-aquantia.ko
-qca808x.ko
-realtek.ko
 pinctrl-spmi-gpio.ko
 pinctrl-spmi-mpp.ko
 qcom-pon.ko
@@ -134,7 +120,6 @@ qcom-pm8008-regulator.ko
 qcom_pil_info.ko
 qcom_q6v5.ko
 qcom_q6v5_pas.ko
-qcom_spss.ko
 qcom_sysmon.ko
 rproc_qcom_common.ko
 glink_pkt.ko
@@ -164,7 +149,6 @@ memory_dump_v2.ko
 microdump_collector.ko
 msm_performance.ko
 panel_event_notifier.ko
-pcie-pdc.ko
 qcom_pd_mapper.ko
 qcom_pdr_msg.ko
 pdr_interface.ko
