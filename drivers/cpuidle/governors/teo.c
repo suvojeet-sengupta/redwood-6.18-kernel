@@ -574,11 +574,7 @@ static int teo_enable_device(struct cpuidle_driver *drv,
 
 static struct cpuidle_governor teo_governor = {
 	.name =		"teo",
-	/*
-	 * redwood: prefer teo over menu (20). It picks deep states better on
-	 * tickless systems, where timer events dominate wakeups.
-	 */
-	.rating =	21,
+	.rating =	19,
 	.enable =	teo_enable_device,
 	.select =	teo_select,
 	.reflect =	teo_reflect,
